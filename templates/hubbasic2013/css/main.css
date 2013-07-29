@@ -1237,24 +1237,24 @@
 		right: 269px;
 		_display: none;
 	}
-	#page_content .aside:before {
+	/*#page_content .aside:before {
 		right: 230px;
-	}
+	}*/
 	#page_content .section .aside:before {
-		right: 210px;
+		right: 238px;
 		top: 0;
 		bottom: 0;
 	}
 	.aside.expanded:before {
 		right: 40%;
 	}
-	#page_content .aside:after {
+	/*#page_content .aside:after {
 		right: 250px;
 	}
 	#page_content .section .aside:after {
 		right: 230px;
 		top: -10px;
-	}
+	}*/
 	.aside.expanded:after {
 		right: 40%;
 		margin-right: 20px;
