@@ -898,7 +898,7 @@ HUB.Video = {
 			$jQ.ajax({
 				url: src,
 				async: false,
-				dataType: 'html',
+				dataType: 'json',
 				success: function( content ) {
 					var parsed = HUB.Video.parseSubtitles( content );
 					sub = { "lang" : lang, "subs" : parsed, "auto" : auto };
