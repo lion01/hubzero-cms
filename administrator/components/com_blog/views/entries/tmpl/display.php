@@ -64,7 +64,7 @@ $tz = 0;
 if (version_compare(JVERSION, '1.6', 'ge'))
 {
 	$dateFormat = 'd M Y';
-	$tz = true;
+	$tz = 0;
 }
 ?>
 <script type="text/javascript">
