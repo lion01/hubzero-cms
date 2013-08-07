@@ -5,26 +5,7 @@
  * @license     http://www.gnu.org/licenses/lgpl-3.0.html LGPLv3
  */
 
-	.icon-warning:before { content: "\26A0"; }
-	.icon-success:before { content: "\f058"; }
-	.icon-info:before    { content: "\f05a"; }
-	.icon-danger:before  { content: "\f094"; }
-	.icon-email:before   { content: "\2709"; }
-	.icon-delete:before  { content: "\f014"; }
-	.icon-edit:before    { content: "\270E"; }
-	.icon-config:before  { content: "\2699"; }
-	.icon-abuse:before   { content: "\2298"; }
-	.icon-tag:before     { content: "\f02b"; }
-	.icon-feed:before    { content: "\f029"; }
-	.icon-browse:before  { content: "\f00b"; }
-	.icon-history:before,
-	.icon-time:before    { content: "\f017"; }
-	.icon-reply:before   { content: "\f08a"; }
-	.icon-date:before    { content: "\f073"; }
-	.icon-prev:before    { content: "\2190"; }
-	.icon-next:before    { content: "\2192"; }
-
- /* Button */
+/* Button */
 	.btn {
 		display: inline-block;
 		*display: inline;
