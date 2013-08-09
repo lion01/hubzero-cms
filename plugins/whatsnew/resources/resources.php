@@ -319,10 +319,16 @@ class plgWhatsnewResources extends JPlugin
 		// Get the component params and merge with resource params
 		$config =& JComponentHelper::getParams('com_resources');
 		$paramClass = 'JParameter';
+		$dateFormat = '%d %b %Y';
+		$tz = null;
+
 		if (version_compare(JVERSION, '1.6', 'ge'))
 		{
 			$paramClass = 'JRegistry';
+			$dateFormat = 'd M Y';
+			$tz = false;
 		}
+
 		$rparams = new $paramClass($row->params);
 		$params = $config;
 		$params->merge($rparams);
