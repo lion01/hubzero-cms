@@ -378,7 +378,7 @@ class JLanguage extends JObject
 
 				foreach ($this->_strings as $key => $string)
                                 {
-                                        $this->_strings[$key] = str_replace('_QQ_', '"', $string);
+                                        $this->_strings[$key] = str_replace('"_QQ_"', '"', $string);
                                 }
 
 				$result = true;
