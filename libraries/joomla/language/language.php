@@ -375,6 +375,12 @@ class JLanguage extends JObject
 			if ( is_array( $newStrings) )
 			{
 				$this->_strings = $overwrite ? array_merge( $this->_strings, $newStrings) : array_merge( $newStrings, $this->_strings);
+
+				foreach ($this->_strings as $key => $string)
+                                {
+                                        $this->_strings[$key] = str_replace('_QQ_', '"', $string);
+                                }
+
 				$result = true;
 			}
 		}
