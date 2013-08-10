@@ -2,6 +2,15 @@
 // No direct access
 defined('_JEXEC') or die( 'Restricted access' );
 
+$dateFormat = '%d %b. %Y';
+$tz = null;
+
+if (version_compare(JVERSION, '1.6', 'ge'))
+{
+	$dateFormat = 'd M. Y';
+	$tz = false;
+}
+
 JToolBarHelper::title( '<a href="index.php?option=com_events">'.JText::_( 'EVENTS' ).'</a>: <small><small>[ '.JText::_('RESPONDANTS').' ]</small></small>', 'user.png' );
 JToolBarHelper::custom('download', 'upload', JText::_('DOWNLOAD_CSV'), JText::_('DOWNLOAD_CSV'), false, false);
 JToolBarHelper::deleteList( '', 'remove', JText::_('Delete') );
@@ -78,7 +87,7 @@ for ($i=0, $n=count( $rows ); $i < $n; $i++)
 				<td><input type="checkbox" name="rid[]" id="cb<?php echo $i;?>" value="<?php echo $row->id ?>" onclick="isChecked(this.checked);" /></td>
 				<td><a href="index.php?option=<?php echo $this->option ?>&amp;controller=<?php echo $this->controller; ?>&amp;task=respondent&amp;id=<?php echo $row->id; ?>&amp;event_id=<?php echo $this->event->id; ?>"><?php echo stripslashes($row->last_name . ', ' . $row->first_name); ?></a></td>
 				<td><a href="mailto:<?php echo $row->email ?>"><?php echo $row->email; ?></a></td>
-				<td><?php echo JHTML::_('date', $row->registered, '%d %b. %Y'); ?></td>
+				<td><?php echo JHTML::_('date', $row->registered, $dateFormat, $tz); ?></td>
 				<td><?php 
 				if (!empty($row->dietary_needs)) {
 					echo 'Dietary needs: '.htmlentities($row->dietary_needs).'<br />';
