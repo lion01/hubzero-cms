@@ -109,7 +109,7 @@ class JDatabaseMySQL extends JDatabase
 	 * @access public
 	 * @return boolean  True on success, false otherwise.
 	 */
-	function test()
+	public static function test()
 	{
 		return (function_exists( 'mysql_connect' ));
 	}

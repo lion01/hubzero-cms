@@ -127,7 +127,7 @@ class JDatabaseMySQLi extends JDatabase
 	 * @access public
 	 * @return boolean  True on success, false otherwise.
 	 */
-	function test()
+	public static function test()
 	{
 		return (function_exists( 'mysqli_connect' ));
 	}
