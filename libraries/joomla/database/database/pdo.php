@@ -111,7 +111,7 @@ class JDatabasePDO extends JDatabase
 	 * @access public
 	 * @return boolean  True on success, false otherwise.
 	 */
-	function test()
+	public static function test()
 	{
 		return class_exists('PDO');
 	}
@@ -166,6 +166,23 @@ class JDatabasePDO extends JDatabase
 		}
 
 		return true;
+	}
+
+	public function quote($text, $escape = true)
+	{
+		return ($escape ? $this->escape($text) : '\'' . $text . '\'');
+	}
+
+	public function escape($text, $extra = false)
+	{
+		$result = $this->connection->quote($text);
+
+		if ($extra)
+		{
+			$result = addcslashes($result, '%_');
+		}
+
+		return $result;
 	}
 
 	/**
@@ -421,7 +438,7 @@ class JDatabasePDO extends JDatabase
 	* @param string The field name of a primary key
 	* @return array If <var>key</var> is empty as sequential list of returned records.
 	*/
-	function loadAssocList( $key='' )
+	function loadAssocList( $key='', $column = null )
 	{
 		if (!($cur = $this->query())) {
 			return null;
@@ -444,7 +461,7 @@ class JDatabasePDO extends JDatabase
 	* @access	public
 	* @return 	object
 	*/
-	function loadObject( )
+	function loadObject($class = 'stdClass')
 	{
 		if (!($cur = $this->query())) {
 			return null;
@@ -467,7 +484,7 @@ class JDatabasePDO extends JDatabase
 	* @param string The field name of a primary key
 	* @return array If <var>key</var> is empty as sequential list of returned records.
 	*/
-	function loadObjectList( $key='' )
+	function loadObjectList($key = '', $class = 'stdClass')
 	{
 		if (!($cur = $this->query())) {
 			return null;
@@ -537,7 +554,7 @@ class JDatabasePDO extends JDatabase
 	 * @param	object	An object whose properties match table fields
 	 * @param	string	The name of the primary key. If provided the object property is updated.
 	 */
-	function insertObject( $table, &$object, $keyName = NULL )
+	public function insertObject( $table, $object, $keyName = NULL )
 	{
 		$fmtsql = 'INSERT INTO '.$this->nameQuote($table).' ( %s ) VALUES ( %s ) ';
 		$fields = array();
@@ -711,7 +728,7 @@ class JDatabasePDO extends JDatabase
 	 * @param 	string $table - table we're looking for
 	 * @return 	bool
 	 */
-	function tableExists( $table )
+	public function tableExists( $table )
 	{
 		$this->setQuery( 'SHOW TABLES LIKE ' . str_replace('#__', $this->_table_prefix, $this->Quote($table)) );
 		$this->query();
@@ -727,7 +744,7 @@ class JDatabasePDO extends JDatabase
 	 * @param	string $field - A field name
 	 * @return	bool          - true if table has field, false otherwise
 	 */
-	function tableHasField( $table, $field )
+	public function tableHasField( $table, $field )
 	{
 		$this->setQuery( 'SHOW FIELDS FROM ' . $table );
 		$fields = $this->loadObjectList('Field');
@@ -743,11 +760,64 @@ class JDatabasePDO extends JDatabase
 	 * @param	string $key   - A key name
 	 * @return	bool          - true if table has key, false otherwise
 	 */
-	function tableHaskey( $table, $key )
+	public function tableHaskey( $table, $key )
 	{
 		$this->setQuery( 'SHOW KEYS FROM ' . $table );
 		$keys = $this->loadObjectList('Key_name');
 
 		return (in_array($key, array_keys($keys))) ? true : false;
 	}
+
+	/**
+	 * Retrieves field information about a given table.
+	 *
+	 * @param   string   $table     The name of the database table.
+	 * @param   boolean  $typeOnly  True to only return field types.
+	 *
+	 * @return  array  An array of fields for the database table.
+	 *
+	 * @since   11.1
+	 * @throws  JDatabaseException
+	 */
+	public function getTableColumns($table, $typeOnly = true)
+	{
+		$result = array();
+
+		// Set the query to get the table fields statement.
+		$this->setQuery('SHOW FULL COLUMNS FROM ' . $this->quoteName($table));
+		$fields = $this->loadObjectList();
+
+		// If we only want the type as the value add just that to the list.
+		if ($typeOnly)
+		{
+			foreach ($fields as $field)
+			{
+				$result[$field->Field] = preg_replace("/[(0-9)]/", '', $field->Type);
+			}
+		}
+		// If we want the whole field data object add that to the list.
+		else
+		{
+			foreach ($fields as $field)
+			{
+				$result[$field->Field] = $field;
+			}
+		}
+
+		return $result;
+	}
+
+	public function dropTable($table, $ifExists = true) {}
+	public function fetchArray($cursor = null) {}
+	public function fetchAssoc($cursor = null) {}
+	public function fetchObject($cursor = null, $class = 'stdClass') {}
+	public function freeResult($cursor = null) {}
+	public function getQuery($new = false) {}
+	public function getTableKeys($tables) {}
+	public function lockTable($tableName) {}
+	public function renameTable($oldTable, $newTable, $backup = null, $prefix = null) {}
+	public function transactionCommit() {}
+	public function transactionRollback() {}
+	public function transactionStart() {}
+	public function unlockTables() {}
 }
