@@ -32,11 +32,13 @@ defined('_JEXEC') or die( 'Restricted access' );
 
 	$tz = 0;
 	$dateFormat = '%d %b %Y';
+
 	if (version_compare(JVERSION, '1.6', 'ge'))
 	{
 		$dateFormat = 'd M Y';
 		$tz = null;
 	}
+
 	/* Job Posting */
 
 	// load some classes
