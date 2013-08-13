@@ -599,7 +599,7 @@ class plgGroupsCalendar extends Hubzero_Plugin
 		{
 			$paramsClass = (version_compare(JVERSION, '1.6', 'ge')) ? 'JRegistry' : 'JParameter';
 			$params = new $paramsClass('');
-			$params->bind( $event['params'] );
+			$params->loadArray( $event['params'] );
 			$event['params'] = $params->toString();
 		}
 
