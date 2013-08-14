@@ -31,16 +31,6 @@
 // Check to ensure this file is included in Joomla!
 defined('_JEXEC') or die( 'Restricted access' );
 
-$dateFormat = '%b %d, %Y';
-$tz = null;
-
-if (version_compare(JVERSION, '1.6', 'ge'))
-{
-	$dateFormat = 'M d, Y';
-	$tz = false;
-}
-
-
 if (!defined('n')) {
 
 /**
@@ -637,6 +627,15 @@ class ProjectsHtml
 	 */
 	public function writeMemberOptions ( $view ) 
 	{ 
+		$dateFormat = '%b %d, %Y';
+		$tz = null;
+
+		if (version_compare(JVERSION, '1.6', 'ge'))
+		{
+			$dateFormat = 'M d, Y';
+			$tz = false;
+		}
+		
 		$options = '';
 		$role    = JText::_('COM_PROJECTS_PROJECT') . ' <span>';
 		
@@ -670,7 +669,7 @@ class ProjectsHtml
 					 . $view->project->alias . a. 'active=team') . '?action=quit">' 
 					 . JText::_('COM_PROJECTS_LEAVE_PROJECT') . '</a></li>';
 		} 
-		
+				
 		$html = "\n" . t.t. '<ul id="member_options">' . "\n";
 		$html.= t.t.' <li>' . ucfirst($role) . "\n";
 		$html.= t.t.' 	<div id="options-dock">' . "\n";
