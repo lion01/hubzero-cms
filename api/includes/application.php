@@ -691,7 +691,7 @@ class Hubzero_API extends JApplication
 	 * @param      unknown $handler Parameter description (if any) ...
 	 * @return     void
 	 */
-	static function registerEvent($event, $handler)
+	/* static */ function registerEvent($event, $handler)
 	{
 		die('registerEvent() invalid in API application context');
 	}
@@ -747,7 +747,7 @@ class Hubzero_API extends JApplication
 	 * @param      array $options Parameter description (if any) ...
 	 * @return     void
 	 */
-	static function &getRouter($name = null, $options = array())
+	/*static */ function &getRouter($name = null, $options = array())
 	{
 		//die('getRouter() invalid in API application context');
 		/*
