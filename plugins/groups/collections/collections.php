@@ -1635,6 +1635,10 @@ class plgGroupsCollections extends Hubzero_Plugin
 		{
 			$row->set('access', 0);
 		}
+		if ($row->get('access') != 0 && $row->get('access') != 4)
+		{
+			$row->set('access', 0);
+		}
 		/*
 		if ($row->get('access') != 0 && $row->get('access') != 4)
 		{
