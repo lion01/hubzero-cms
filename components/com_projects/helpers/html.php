@@ -635,7 +635,7 @@ class ProjectsHtml
 			$dateFormat = 'M d, Y';
 			$tz = false;
 		}
-		
+
 		$options = '';
 		$role    = JText::_('COM_PROJECTS_PROJECT') . ' <span>';
 		

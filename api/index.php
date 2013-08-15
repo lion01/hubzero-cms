@@ -46,6 +46,7 @@ ini_set('output_hander','');
 ini_set('implicit_flush','0');
 
 define('_JEXEC', 1);
+define('JPATH_PLATFORM', 1);
 define('DS', DIRECTORY_SEPARATOR);
 define('JPATH_ROOT', dirname( dirname(__FILE__) ));
 define('JPATH_BASE', JPATH_ROOT);
@@ -55,6 +56,10 @@ define('JPATH_INSTALLATION', JPATH_ROOT . DS . 'installation');
 define('JPATH_ADMINISTRATOR', JPATH_ROOT . DS . 'administrator');
 define('JPATH_LIBRARIES', JPATH_ROOT . DS . 'libraries');
 define('JPATH_XMLRPC', JPATH_ROOT . DS . 'xmlrpc');
+define('JPATH_CACHE', JPATH_ROOT . DS . 'cache');
+define('JPATH_PLUGINS', JPATH_ROOT . DS . 'plugins');
+define('JPATH_API', JPATH_ROOT . DS . 'api');
+define('HVERSION', "1.1.0");
 
 require(JPATH_LIBRARIES.DS.'loader.php');
 
