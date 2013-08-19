@@ -36,6 +36,11 @@
 #    See COPYRIGHT.php for copyright notices and details.
 #
 
+
+#
+# Last Migration Applied: Migration20130816143341ComCitations.php
+#
+
 CREATE TABLE `app` (
   `appname` varchar(80) NOT NULL DEFAULT '',
   `geometry` varchar(9) NOT NULL DEFAULT '',
@@ -143,6 +148,24 @@ CREATE TABLE `#__abuse_reports` (
   `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `state` int(3) DEFAULT '0',
   `subject` varchar(150) DEFAULT NULL,
+  `reviewed` DATETIME  NOT NULL  DEFAULT '0000-00-00 00:00:00',
+  `reviewed_by` INT(11)  NOT NULL  DEFAULT '0',
+  `note` TEXT  NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__announcements` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `scope` varchar(100) DEFAULT NULL,
+  `scope_id` int(11) DEFAULT NULL,
+  `content` text,
+  `priority` tinyint(2) NOT NULL DEFAULT '0',
+  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created_by` int(11) NOT NULL DEFAULT '0',
+  `state` tinyint(2) NOT NULL DEFAULT '0',
+  `publish_up` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `publish_down` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `sticky` tinyint(2) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
@@ -192,15 +215,6 @@ CREATE TABLE `#__answers_responses` (
   `anonymous` tinyint(2) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   FULLTEXT KEY `answer` (`answer`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
-CREATE TABLE `#__answers_tags` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `questionid` int(11) NOT NULL DEFAULT '0',
-  `tagid` int(11) NOT NULL DEFAULT '0',
-  `taggerid` varchar(200) DEFAULT NULL,
-  `taggedon` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__auth_domain` (
@@ -348,7 +362,8 @@ CREATE TABLE `#__blog_comments` (
   `created_by` int(11) DEFAULT '0',
   `anonymous` tinyint(2) DEFAULT '0',
   `parent` int(11) DEFAULT '0',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_entry_id` (`entry_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__blog_entries` (
@@ -367,9 +382,9 @@ CREATE TABLE `#__blog_entries` (
   `allow_comments` tinyint(2) DEFAULT '0',
   `scope` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  FULLTEXT KEY `title` (`title`),
-  FULLTEXT KEY `content` (`content`),
-  FULLTEXT KEY `#__blog_entries_title_content_ftidx` (`title`,`content`)
+  FULLTEXT KEY `ftidx_title` (`title`),
+  FULLTEXT KEY `ftidx_content` (`content`),
+  FULLTEXT KEY `ftidx_title_content` (`title`,`content`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__cart` (
@@ -381,6 +396,103 @@ CREATE TABLE `#__cart` (
   `added` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `selections` text,
   PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__cart_cart_items` (
+  `crtId` int(16) NOT NULL,
+  `sId` int(16) NOT NULL,
+  `crtiQty` int(5) DEFAULT NULL,
+  `crtiOldQty` int(5) DEFAULT NULL,
+  `crtiPrice` decimal(10,2) DEFAULT NULL,
+  `crtiOldPrice` decimal(10,2) DEFAULT NULL,
+  `crtiName` varchar(255) DEFAULT NULL,
+  `crtiAvailable` tinyint(1) DEFAULT '1',
+  PRIMARY KEY (`crtId`,`sId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+		
+CREATE TABLE `#__cart_carts` (
+  `crtId` int(16) NOT NULL AUTO_INCREMENT,
+  `crtCreated` datetime DEFAULT NULL,
+  `crtLastUpdated` datetime DEFAULT NULL,
+  `uidNumber` int(16) DEFAULT NULL,
+  PRIMARY KEY (`crtId`),
+  UNIQUE KEY `uidx_uidNumber` (`uidNumber`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__cart_coupons` (
+  `crtId` int(16) NOT NULL,
+  `cnId` int(16) NOT NULL,
+  `crtCnAdded` datetime DEFAULT NULL,
+  `crtCnStatus` char(15) DEFAULT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+		
+CREATE TABLE `#__cart_memberships` (
+  `crtmId` int(16) NOT NULL AUTO_INCREMENT,
+  `pId` int(16) DEFAULT NULL,
+  `crtId` int(16) DEFAULT NULL,
+  `crtmExpires` datetime DEFAULT NULL,
+  PRIMARY KEY (`crtmId`),
+  UNIQUE KEY `uidx_pId_crtId` (`pId`,`crtId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__cart_saved_addresses` (
+  `saId` int(16) NOT NULL AUTO_INCREMENT,
+  `uidNumber` int(16) NOT NULL,
+  `saToFirst` char(100) NOT NULL,
+  `saToLast` char(100) NOT NULL,
+  `saAddress` char(255) NOT NULL,
+  `saCity` char(25) NOT NULL,
+  `saState` char(2) NOT NULL,
+  `saZip` char(10) NOT NULL,
+  PRIMARY KEY (`saId`),
+  UNIQUE KEY `uidx_uidNumber_saToFirst_saToLast_saAddress_saZip` (`uidNumber`,`saToFirst`,`saToLast`,`saAddress`(100),`saZip`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__cart_transaction_info` (
+  `tId` int(16) NOT NULL,
+  `tiShippingToFirst` char(100) DEFAULT NULL,
+  `tiShippingToLast` char(100) DEFAULT NULL,
+  `tiShippingAddress` char(255) DEFAULT NULL,
+  `tiShippingCity` char(25) DEFAULT NULL,
+  `tiShippingState` char(2) DEFAULT NULL,
+  `tiShippingZip` char(10) DEFAULT NULL,
+  `tiTotal` decimal(10,2) DEFAULT NULL,
+  `tiSubtotal` decimal(10,2) DEFAULT NULL,
+  `tiTax` decimal(10,2) DEFAULT NULL,
+  `tiShipping` decimal(10,2) DEFAULT NULL,
+  `tiShippingDiscount` decimal(10,2) DEFAULT NULL,
+  `tiDiscounts` decimal(10,2) DEFAULT NULL,
+  `tiItems` text,
+  `tiPerks` text,
+  `tiMeta` text,
+  `tiCustomerStatus` char(15) DEFAULT 'unconfirmed',
+  PRIMARY KEY (`tId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+		
+CREATE TABLE `#__cart_transaction_items` (
+  `tId` int(16) NOT NULL,
+  `sId` int(16) NOT NULL,
+  `tiQty` int(5) DEFAULT NULL,
+  `tiPrice` decimal(10,2) DEFAULT NULL,
+  PRIMARY KEY (`tId`,`sId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+		
+CREATE TABLE `#__cart_transaction_steps` (
+  `tsId` int(16) NOT NULL AUTO_INCREMENT,
+  `tId` int(16) NOT NULL,
+  `tsStep` char(16) NOT NULL,
+  `tsStatus` tinyint(1) DEFAULT '0',
+  PRIMARY KEY (`tsId`),
+  UNIQUE KEY `uidx_tId_tsStep` (`tId`,`tsStep`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+		
+CREATE TABLE `#__cart_transactions` (
+  `tId` int(16) NOT NULL AUTO_INCREMENT,
+  `crtId` int(16) DEFAULT NULL,
+  `tCreated` datetime DEFAULT NULL,
+  `tLastUpdated` datetime DEFAULT NULL,
+  `tStatus` char(32) DEFAULT NULL,
+  PRIMARY KEY (`tId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__categories` (
@@ -462,7 +574,8 @@ CREATE TABLE `#__citations` (
   `research_notes` text,
   `params` text,
   PRIMARY KEY (`id`),
-  FULLTEXT KEY `#__citations_title_isbn_doi_abstract_ftidx` (`title`,`isbn`,`doi`,`abstract`)
+  FULLTEXT KEY `ftidx_title_isbn_doi_abstract` (`title`,`isbn`,`doi`,`abstract`),
+  FULLTEXT KEY `ftidx_title_isbn_doi_abstract_author_publisher` (`title`,`isbn`,`doi`,`abstract`, `author`, `publisher`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__citations_assoc` (
@@ -500,8 +613,16 @@ CREATE TABLE `#__citations_authors` (
   `in_network` int(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `cid_auth_authid_uid` (`cid`,`author`,`authorid`,`uidNumber`),
-  KEY `authorid` (`authorid`),
-  KEY `uidNumber` (`uidNumber`)
+  KEY `idx_authorid` (`authorid`),
+  KEY `idx_uidNumber` (`uidNumber`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__citations_format` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `typeid` int(11) DEFAULT NULL,
+  `style` varchar(50) DEFAULT NULL,
+  `format` text,
+  PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__citations_secondary` (
@@ -535,6 +656,96 @@ CREATE TABLE `#__citations_types` (
   `type_export` varchar(255) DEFAULT NULL,
   `fields` text,
   PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__collections` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL DEFAULT '',
+  `alias` varchar(255) NOT NULL,
+  `object_id` int(11) NOT NULL DEFAULT '0',
+  `object_type` varchar(150) NOT NULL DEFAULT '',
+  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created_by` int(11) NOT NULL DEFAULT '0',
+  `state` tinyint(3) NOT NULL DEFAULT '1',
+  `access` tinyint(3) NOT NULL DEFAULT '0',
+  `is_default` tinyint(2) NOT NULL DEFAULT '0',
+  `description` mediumtext NOT NULL,
+  `positive` int(11) NOT NULL DEFAULT '0',
+  `negative` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_object_type_object_id` (`object_type`,`object_id`),
+  KEY `idx_state` (`state`),
+  KEY `idx_access` (`access`),
+  KEY `idx_created_by` (`created_by`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__collections_assets` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `item_id` int(11) NOT NULL DEFAULT '0',
+  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created_by` int(11) NOT NULL DEFAULT '0',
+  `filename` varchar(255) NOT NULL DEFAULT '',
+  `description` mediumtext NOT NULL,
+  `state` tinyint(2) NOT NULL DEFAULT '0',
+  `type` varchar(50) NOT NULL DEFAULT 'file',
+  `ordering` tinyint(3) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_item_id` (`item_id`),
+  KEY `idx_created_by` (`created_by`),
+  KEY `idx_state` (`state`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__collections_following` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `follower_type` varchar(150) NOT NULL,
+  `follower_id` int(11) NOT NULL DEFAULT '0',
+  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `following_type` varchar(150) NOT NULL DEFAULT '',
+  `following_id` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__collections_items` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL DEFAULT '',
+  `description` mediumtext NOT NULL,
+  `url` varchar(255) NOT NULL,
+  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created_by` int(11) NOT NULL DEFAULT '0',
+  `modified` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `modified_by` int(11) NOT NULL DEFAULT '0',
+  `state` tinyint(3) NOT NULL DEFAULT '1',
+  `access` tinyint(2) NOT NULL DEFAULT '0',
+  `positive` int(11) NOT NULL DEFAULT '0',
+  `negative` int(11) NOT NULL DEFAULT '0',
+  `type` varchar(150) NOT NULL DEFAULT '',
+  `object_id` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_state` (`state`),
+  KEY `idx_created_by` (`created_by`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__collections_posts` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created_by` int(11) NOT NULL DEFAULT '0',
+  `collection_id` int(11) NOT NULL DEFAULT '0',
+  `item_id` int(11) NOT NULL DEFAULT '0',
+  `description` mediumtext NOT NULL,
+  `original` tinyint(2) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_collection_id` (`collection_id`),
+  KEY `idx_item_id` (`item_id`),
+  KEY `idx_original` (`original`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__collections_votes` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL DEFAULT '0',
+  `item_id` int(11) NOT NULL DEFAULT '0',
+  `voted` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  PRIMARY KEY (`id`),
+  KEY `idx_item_id_user_id` (`item_id`,`user_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__comments` (
@@ -720,6 +931,426 @@ CREATE TABLE `#__core_log_searches` (
   `hits` int(11) unsigned NOT NULL DEFAULT '0'
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
+CREATE TABLE `#__courses` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `alias` varchar(255) NOT NULL DEFAULT '',
+  `group_id` int(11) NOT NULL DEFAULT '0',
+  `title` varchar(255) NOT NULL DEFAULT '',
+  `state` tinyint(3) NOT NULL DEFAULT '0',
+  `type` tinyint(3) NOT NULL DEFAULT '0',
+  `access` tinyint(3) NOT NULL DEFAULT '0',
+  `blurb` text NOT NULL,
+  `description` text NOT NULL,
+  `logo` varchar(255) NOT NULL DEFAULT '',
+  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created_by` int(11) NOT NULL DEFAULT '0',
+  `params` text NOT NULL,
+  PRIMARY KEY (`id`),
+  FULLTEXT KEY `ftidx_alias_title_blurb` (`alias`,`title`,`blurb`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_announcements` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `offering_id` int(11) NOT NULL DEFAULT '0',
+  `content` text,
+  `priority` tinyint(2) NOT NULL DEFAULT '0',
+  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created_by` int(11) NOT NULL DEFAULT '0',
+  `section_id` int(11) NOT NULL DEFAULT '0',
+  `state` tinyint(2) NOT NULL DEFAULT '0',
+  `publish_up` DATETIME  NOT NULL  DEFAULT '0000-00-00 00:00:00',
+  `publish_down` DATETIME  NOT NULL  DEFAULT '0000-00-00 00:00:00',
+  `sticky` TINYINT(2)  NOT NULL  DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_offering_id` (`offering_id`),
+  KEY `idx_section_id` (`section_id`),
+  KEY `idx_created_by` (`created_by`),
+  KEY `idx_state` (`state`),
+  KEY `idx_priority` (`priority`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_asset_associations` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `asset_id` int(11) NOT NULL DEFAULT '0',
+  `scope_id` int(11) NOT NULL DEFAULT '0',
+  `scope` varchar(255) NOT NULL DEFAULT 'asset_group',
+  `ordering` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_asset_id` (`asset_id`),
+  KEY `idx_scope_id` (`scope_id`),
+  KEY `idx_scope` (`scope`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_asset_group_types` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `alias` varchar(200) NOT NULL DEFAULT '',
+  `type` varchar(255) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_asset_groups` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `unit_id` int(11) NOT NULL DEFAULT '0',
+  `alias` varchar(250) NOT NULL,
+  `title` varchar(255) NOT NULL DEFAULT '',
+  `description` varchar(255) NOT NULL DEFAULT '',
+  `ordering` int(11) NOT NULL DEFAULT '0',
+  `parent` int(11) NOT NULL DEFAULT '0',
+  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created_by` int(11) NOT NULL DEFAULT '0',
+  `state` tinyint(2) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_unit_id` (`unit_id`),
+  KEY `idx_created_by` (`created_by`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_asset_views` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `asset_id` int(11) NOT NULL,
+  `course_id` INT(11)  NULL  DEFAULT NULL,
+  `viewed` datetime NOT NULL,
+  `viewed_by` int(11) NOT NULL,
+  `ip` VARCHAR(15) NULL  DEFAULT NULL,
+  `url` VARCHAR(255) NULL  DEFAULT NULL,
+  `referrer` VARCHAR(255) NULL  DEFAULT NULL,
+  `user_agent_string` VARCHAR(255) NULL  DEFAULT NULL,
+  `session_id` VARCHAR(200) NULL  DEFAULT NULL, 
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_assets` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL DEFAULT '',
+  `content` mediumtext,
+  `type` varchar(255) NOT NULL DEFAULT '',
+  `subtype` VARCHAR(255)  NOT NULL  DEFAULT 'file',
+  `url` varchar(255) NOT NULL DEFAULT '',
+  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created_by` int(11) NOT NULL DEFAULT '0',
+  `state` tinyint(2) NOT NULL DEFAULT '1',
+  `course_id` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_course_id` (`course_id`),
+  KEY `idx_created_by` (`created_by`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_form_answers` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `correct` tinyint(4) NOT NULL,
+  `left_dist` int(11) NOT NULL,
+  `top_dist` int(11) NOT NULL,
+  `question_id` int(11) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_form_deployments` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `form_id` int(11) NOT NULL,
+  `start_time` timestamp NULL DEFAULT NULL,
+  `end_time` timestamp NULL DEFAULT NULL,
+  `results_open` varchar(50) DEFAULT NULL,
+  `time_limit` int(11) DEFAULT NULL,
+  `crumb` varchar(20) NOT NULL,
+  `results_closed` varchar(50) DEFAULT NULL,
+  `user_id` int(11) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_form_questions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `page` int(11) NOT NULL,
+  `version` int(11) NOT NULL,
+  `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `left_dist` int(11) NOT NULL,
+  `top_dist` int(11) NOT NULL,
+  `height` int(11) NOT NULL,
+  `width` int(11) NOT NULL,
+  `form_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_form_respondent_progress` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `respondent_id` int(11) NOT NULL,
+  `question_id` int(11) NOT NULL,
+  `answer_id` int(11) NOT NULL,
+  `submitted` DATETIME NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uidx_respondent_id_question_id` (`respondent_id`,`question_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_form_respondents` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `deployment_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `started` timestamp NULL DEFAULT NULL,
+  `finished` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_form_responses` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `respondent_id` int(11) NOT NULL,
+  `question_id` int(11) NOT NULL,
+  `answer_id` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_respondent_id` (`respondent_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_forms` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `title` text,
+  `active` tinyint(4) NOT NULL DEFAULT '1',
+  `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `asset_id` INT(11)  NULL  DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_grade_book` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `score` DECIMAL(5,2)  NULL,
+  `scope` varchar(255) NOT NULL DEFAULT 'asset',
+  `scope_id` int(11) NOT NULL DEFAULT '0',
+  `override` DECIMAL(5,2)  NULL  DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uidx_user_id_scope_scope_id` (`user_id`, `scope`, `scope_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_grade_policies` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `description` mediumtext,
+  `threshold` decimal(3,2) DEFAULT NULL,
+  `exam_weight` decimal(3,2) DEFAULT NULL,
+  `quiz_weight` decimal(3,2) DEFAULT NULL,
+  `homework_weight` decimal(3,2) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_log` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `scope_id` int(11) NOT NULL DEFAULT '0',
+  `scope` varchar(100) NOT NULL DEFAULT '',
+  `timestamp` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `user_id` int(11) NOT NULL DEFAULT '0',
+  `action` varchar(50) NOT NULL DEFAULT '',
+  `comments` text NOT NULL,
+  `actor_id` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_members` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL DEFAULT '0',
+  `course_id` int(11) NOT NULL DEFAULT '0',
+  `offering_id` int(11) NOT NULL DEFAULT '0',
+  `section_id` int(11) NOT NULL DEFAULT '0',
+  `role_id` int(11) NOT NULL DEFAULT '0',
+  `permissions` mediumtext NOT NULL,
+  `enrolled` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `student` tinyint(2) NOT NULL DEFAULT '0',
+  `first_visit` DATETIME  NOT NULL  DEFAULT '0000-00-00 00:00:00',
+  PRIMARY KEY (`id`),
+  KEY `idx_offering_id` (`offering_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_role_id` (`role_id`),
+  KEY `idx_section_id` (`section_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_member_badges` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `member_id` int(11) NOT NULL,
+  `earned` int(1) DEFAULT NULL,
+  `earned_on` datetime DEFAULT NULL,
+  `claim_url` varchar(255) DEFAULT NULL,
+  `action` VARCHAR(255) NULL DEFAULT NULL,
+  `action_on` DATETIME NULL  DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uidx_member_id` (`member_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_member_notes` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `scope` varchar(255) NOT NULL DEFAULT '',
+  `scope_id` int(11) NOT NULL DEFAULT '0',
+  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created_by` int(11) NOT NULL DEFAULT '0',
+  `content` mediumtext NOT NULL,
+  `pos_x` int(11) NOT NULL DEFAULT '0',
+  `pos_y` int(11) NOT NULL DEFAULT '0',
+  `width` int(11) NOT NULL DEFAULT '0',
+  `height` int(11) NOT NULL DEFAULT '0',
+  `state` tinyint(2) NOT NULL DEFAULT '0',
+  `timestamp` time NOT NULL DEFAULT '00:00:00',
+  `section_id` INT(11)  NOT NULL  DEFAULT '0',
+  `access` TINYINT(2)  NOT NULL  DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_scoped` (`scope`, `scope_id`),
+  KEY `idx_createdby` (`created_by`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_offering_badges` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `offering_id` int(11) NOT NULL,
+  `badge_id` int(11) NOT NULL,
+  `img_url` varchar(255) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_offering_section_dates` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `section_id` int(11) NOT NULL DEFAULT '0',
+  `scope` varchar(150) NOT NULL DEFAULT '',
+  `scope_id` int(11) NOT NULL DEFAULT '0',
+  `publish_up` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `publish_down` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created_by` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_offering_sections` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `offering_id` int(11) NOT NULL DEFAULT '0',
+  `alias` varchar(255) NOT NULL DEFAULT '',
+  `title` varchar(255) NOT NULL DEFAULT '',
+  `state` tinyint(2) NOT NULL DEFAULT '1',
+  `start_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `end_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `publish_up` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `publish_down` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created_by` int(11) NOT NULL DEFAULT '0',
+  `enrollment` TINYINT(2)  NOT NULL  DEFAULT '0',
+  `grade_policy_id` INT(11)  NOT NULL  DEFAULT '1',
+  `params` TEXT  NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_offering_id` (`offering_id`),
+  KEY `idx_created_by` (`created_by`),
+  KEY `idx_state` (`state`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_offerings` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `course_id` int(11) NOT NULL DEFAULT '0',
+  `alias` varchar(255) NOT NULL DEFAULT '',
+  `title` varchar(255) NOT NULL DEFAULT '',
+  `term` varchar(255) NOT NULL DEFAULT '',
+  `state` tinyint(2) NOT NULL DEFAULT '1',
+  `badge_id` INT(11)  NULL  DEFAULT NULL,
+  `publish_up` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `publish_down` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created_by` int(11) NOT NULL DEFAULT '0',
+  `params` TEXT  NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_course_id` (`course_id`),
+  KEY `idx_state` (`state`),
+  KEY `idx_created_by` (`created_by`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_page_hits` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `offering_id` int(11) NOT NULL DEFAULT '0',
+  `page_id` int(11) NOT NULL DEFAULT '0',
+  `user_id` int(11) NOT NULL DEFAULT '0',
+  `datetime` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `ip` varchar(15) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  KEY `idx_offering_id` (`offering_id`),
+  KEY `idx_page_id` (`page_id`),
+  KEY `idx_user_id` (`user_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_pages` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `course_id` INT(11)  NOT NULL  DEFAULT '0',
+  `offering_id` varchar(100) NOT NULL DEFAULT '0',
+  `section_id` INT(11)  NOT NULL  DEFAULT '0',
+  `url` varchar(100) NOT NULL DEFAULT '',
+  `title` varchar(100) NOT NULL DEFAULT '',
+  `content` text NOT NULL,
+  `ordering` INT(11)  NOT NULL  DEFAULT '0',
+  `active` int(11) NOT NULL DEFAULT '0',
+  `privacy` varchar(10) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  KEY `idx_offering_id` (`offering_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_reviews` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `course_id` int(11) NOT NULL DEFAULT '0',
+  `offering_id` int(11) NOT NULL DEFAULT '0',
+  `rating` decimal(2,1) NOT NULL DEFAULT '0.0',
+  `content` text NOT NULL,
+  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created_by` int(11) NOT NULL DEFAULT '0',
+  `modified` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `modified_by` int(11) NOT NULL DEFAULT '0',
+  `anonymous` tinyint(2) NOT NULL DEFAULT '0',
+  `parent` int(11) NOT NULL DEFAULT '0',
+  `access` tinyint(2) NOT NULL DEFAULT '0',
+  `state` tinyint(2) NOT NULL DEFAULT '0',
+  `positive` int(11) NOT NULL DEFAULT '0',
+  `negative` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_roles` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `offering_id` int(11) NOT NULL DEFAULT '0',
+  `alias` varchar(150) NOT NULL,
+  `title` varchar(150) NOT NULL DEFAULT '',
+  `permissions` mediumtext NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_offering_id` (`offering_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_units` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `offering_id` int(11) NOT NULL DEFAULT '0',
+  `alias` varchar(250) NOT NULL,
+  `title` varchar(255) NOT NULL DEFAULT '',
+  `description` longtext NOT NULL,
+  `ordering` int(11) NOT NULL DEFAULT '0',
+  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created_by` int(11) NOT NULL DEFAULT '0',
+  `state` tinyint(2) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_offering_id` (`offering_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__courses_offering_section_codes` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `section_id` int(11) NOT NULL DEFAULT '0',
+  `code` varchar(10) NOT NULL DEFAULT '',
+  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created_by` int(11) NOT NULL DEFAULT '0',
+  `expires` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `redeemed` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `redeemed_by` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__cron_jobs` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL DEFAULT '',
+  `state` tinyint(3) NOT NULL DEFAULT '0',
+  `plugin` varchar(255) NOT NULL DEFAULT '',
+  `event` varchar(255) NOT NULL DEFAULT '',
+  `last_run` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `next_run` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `recurrence` varchar(50) NOT NULL DEFAULT '',
+  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created_by` int(11) NOT NULL DEFAULT '0',
+  `modified` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `modified_by` int(11) NOT NULL DEFAULT '0',
+  `active` tinyint(3) NOT NULL DEFAULT '0',
+  `ordering` int(11) NOT NULL DEFAULT '0',
+  `params` TEXT  NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
 CREATE TABLE `#__document_resource_rel` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `document_id` int(11) NOT NULL,
@@ -747,6 +1378,18 @@ CREATE TABLE `#__doi_mapping` (
   `doi` varchar(50) DEFAULT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
+CREATE TABLE `#__email_bounces` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `email` varchar(150) DEFAULT NULL,
+  `component` varchar(100) DEFAULT NULL,
+  `object` varchar(100) DEFAULT NULL,
+  `object_id` int(11) DEFAULT NULL,
+  `reason` text,
+  `date` datetime DEFAULT NULL,
+  `resolved` int(11) DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
 CREATE TABLE `#__event_registration` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `event` varchar(100) DEFAULT NULL,
@@ -768,6 +1411,10 @@ CREATE TABLE `#__events` (
   `id` int(12) NOT NULL AUTO_INCREMENT,
   `sid` int(11) NOT NULL DEFAULT '0',
   `catid` int(11) NOT NULL DEFAULT '1',
+  `calendar_id` int(11),
+  `ical_uid` VARCHAR(255),
+  `scope` VARCHAR(100),
+  `scope_id` INT(11),
   `title` varchar(255) NOT NULL DEFAULT '',
   `content` longtext NOT NULL,
   `adresse_info` varchar(120) NOT NULL DEFAULT '',
@@ -803,19 +1450,37 @@ CREATE TABLE `#__events` (
   `restricted` varchar(100) DEFAULT NULL,
   `email` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  FULLTEXT KEY `title` (`title`),
-  FULLTEXT KEY `content` (`content`),
-  FULLTEXT KEY `#__events_title_content_ftidx` (`title`,`content`)
+  FULLTEXT KEY `ftidx_title` (`title`),
+  FULLTEXT KEY `ftdix_content` (`content`),
+  FULLTEXT KEY `ftdix_title_content` (`title`,`content`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__events_calendars` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `scope` varchar(100) DEFAULT NULL,
+  `scope_id` int(11) DEFAULT NULL,
+  `title` varchar(100) DEFAULT NULL,
+  `color` varchar(100) DEFAULT NULL,
+  `published` int(11) DEFAULT 1,
+  `url` VARCHAR(255),
+  `readonly` TINYINT(4) DEFAULT 0,
+  `last_fetched` DATETIME,
+  `last_fetched_attempt` DATETIME,
+  `failed_attempts` INT(11) DEFAULT 0,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
 CREATE TABLE `#__events_categories` (
   `id` int(12) NOT NULL DEFAULT '0',
   `color` varchar(8) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
 CREATE TABLE `#__events_config` (
   `param` varchar(100) DEFAULT NULL,
   `value` tinytext
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
 CREATE TABLE `#__events_pages` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `event_id` int(11) DEFAULT '0',
@@ -830,11 +1495,13 @@ CREATE TABLE `#__events_pages` (
   `params` text,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
 CREATE TABLE `#__events_respondent_race_rel` (
   `respondent_id` int(11) DEFAULT NULL,
   `race` varchar(255) DEFAULT NULL,
   `tribal_affiliation` varchar(255) DEFAULT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
 CREATE TABLE `#__events_respondents` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `event_id` int(11) NOT NULL DEFAULT '0',
@@ -863,6 +1530,7 @@ CREATE TABLE `#__events_respondents` (
   `departure` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
 CREATE TABLE `#__faq` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(250) DEFAULT NULL,
@@ -973,7 +1641,9 @@ CREATE TABLE `#__forum_attachments` (
   `post_id` int(11) NOT NULL DEFAULT '0',
   `filename` varchar(255) DEFAULT NULL,
   `description` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_filename_post_id` (`filename`, `post_id`),
+  KEY `idx_parent` (`parent`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__forum_categories` (
@@ -993,7 +1663,15 @@ CREATE TABLE `#__forum_categories` (
   `closed` tinyint(2) NOT NULL DEFAULT '0',
   `asset_id` int(11) NOT NULL DEFAULT '0',
   `object_id` INT(11)  NOT NULL  DEFAULT '0',
-  PRIMARY KEY (`id`)
+  `ordering` INT(11)  NOT NULL  DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_scope_scope_id` (`scope`, `scope_id`),
+  KEY `idx_asset_id` (`asset_id`),
+  KEY `idx_object_id` (`object_id`),
+  KEY `idx_state` (`state`),
+  KEY `idx_access` (`access`),
+  KEY `idx_section_id` (`section_id`),
+  KEY `idx_closed` (`closed`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__forum_posts` (
@@ -1009,6 +1687,7 @@ CREATE TABLE `#__forum_posts` (
   `hits` int(11) NOT NULL DEFAULT '0',
   `scope` varchar(100)  NOT NULL  DEFAULT 'site',
   `scope_id` int(11) NOT NULL DEFAULT '0',
+  `scope_sub_id` INT(11)  NOT NULL  DEFAULT '0',
   `access` tinyint(2) NOT NULL DEFAULT '0',
   `anonymous` tinyint(2) NOT NULL DEFAULT '0',
   `modified` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
@@ -1016,8 +1695,20 @@ CREATE TABLE `#__forum_posts` (
   `last_activity` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `asset_id` int(11) NOT NULL DEFAULT '0',
   `object_id` INT(11)  NOT NULL  DEFAULT '0',
+  `lft` int(11) NOT NULL DEFAULT '0',
+  `rgt` int(11) NOT NULL DEFAULT '0',
+  `thread` int(11) NOT NULL DEFAULT '0',
+  `closed` TINYINT(2)  NOT NULL  DEFAULT '0',
   PRIMARY KEY (`id`),
-  FULLTEXT KEY `question` (`comment`),
+  KEY `idx_scope_scope_id` (`scope`, `scope_id`),
+  KEY `idx_category_id` (`category_id`),
+  KEY `idx_access` (`access`),
+  KEY `idx_asset_id` (`asset_id`),
+  KEY `idx_object_id` (`object_id`),
+  KEY `idx_state` (`state`),
+  KEY `idx_sticky` (`sticky`),
+  KEY `idx_parent` (`parent`),
+  FULLTEXT KEY `comment` (`comment`),
   FULLTEXT KEY `comment_title_fidx` (`comment`, `title`) 
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
@@ -1033,7 +1724,12 @@ CREATE TABLE `#__forum_sections` (
   `scope_id` int(11) NOT NULL DEFAULT '0',
   `asset_id` int(11) NOT NULL DEFAULT '0',
   `object_id` INT(11)  NOT NULL  DEFAULT '0',
-  PRIMARY KEY (`id`)
+  `ordering` INT(11)  NOT NULL  DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_scoped` (`scope`, `scope_id`),
+  KEY `idx_asset_id` (`asset_id`),
+  KEY `idx_object_id` (`object_id`),
+  KEY `idx_access` (`access`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__groups` (
@@ -1101,7 +1797,7 @@ CREATE TABLE `#__item_comment_files` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `comment_id` int(11) NOT NULL DEFAULT '0',
   `filename` varchar(100) DEFAULT NULL,
-  KEY `id` (`id`)
+  PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__item_votes` (
@@ -1278,9 +1974,9 @@ CREATE TABLE `#__media_tracking` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` int(11) DEFAULT NULL,
   `session_id` varchar(200) DEFAULT NULL,
-  `ip_address` varchar(100) CHARACTER SET latin1 DEFAULT NULL,
+  `ip_address` varchar(100) DEFAULT NULL,
   `object_id` int(11) DEFAULT NULL,
-  `object_type` varchar(100) CHARACTER SET latin1 DEFAULT NULL,
+  `object_type` varchar(100) DEFAULT NULL,
   `object_duration` int(11) DEFAULT NULL,
   `current_position` int(11) DEFAULT NULL,
   `farthest_position` int(11) DEFAULT NULL,
@@ -1288,6 +1984,7 @@ CREATE TABLE `#__media_tracking` (
   `farthest_position_timestamp` datetime DEFAULT NULL,
   `completed` int(11) DEFAULT NULL,
   `total_views` int(11) DEFAULT NULL,
+  `total_viewing_time` int(11) DEFAULT 0,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
@@ -1427,6 +2124,141 @@ CREATE TABLE `#__newsfeeds` (
   PRIMARY KEY (`id`),
   KEY `published` (`published`),
   KEY `catid` (`catid`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__newsletters` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `alias` varchar(150) DEFAULT NULL,
+  `name` varchar(150) DEFAULT NULL,
+  `issue` int(11) DEFAULT NULL,
+  `type` varchar(50) DEFAULT 'html',
+  `template` int(11) DEFAULT NULL,
+  `published` int(11) DEFAULT '1',
+  `sent` int(11) DEFAULT '0',
+  `content` text,
+  `tracking` int(11) DEFAULT '1',
+  `created` datetime DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `modified` datetime DEFAULT NULL,
+  `modified_by` int(11) DEFAULT NULL,
+  `deleted` int(11) DEFAULT '0',
+  `params` text,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+					
+CREATE TABLE `#__newsletter_templates` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `editable` int(11) DEFAULT '1',
+  `name` varchar(100) DEFAULT NULL,
+  `template` text,
+  `primary_title_color` varchar(100) DEFAULT NULL,
+  `primary_text_color` varchar(100) DEFAULT NULL,
+  `secondary_title_color` varchar(100) DEFAULT NULL,
+  `secondary_text_color` varchar(100) DEFAULT NULL,
+  `deleted` int(11) DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+					
+CREATE TABLE `#__newsletter_primary_story` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `nid` int(11) NOT NULL,
+  `title` varchar(150) DEFAULT NULL,
+  `story` text,
+  `readmore_title` varchar(100) DEFAULT NULL,
+  `readmore_link` varchar(200) DEFAULT NULL,
+  `order` int(11) DEFAULT NULL,
+  `deleted` int(11) DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+					
+CREATE TABLE `#__newsletter_secondary_story` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `nid` int(11) NOT NULL,
+  `title` varchar(150) DEFAULT NULL,
+  `story` text,
+  `readmore_title` varchar(100) DEFAULT NULL,
+  `readmore_link` varchar(200) DEFAULT NULL,
+  `order` int(11) DEFAULT NULL,
+  `deleted` int(11) DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+					
+CREATE TABLE `#__newsletter_mailings` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `nid` int(11) DEFAULT NULL,
+  `lid` int(11) DEFAULT NULL,
+  `subject` varchar(250) DEFAULT NULL,
+  `body` longtext,
+  `headers` text,
+  `args` text,
+  `tracking` int(11) DEFAULT '1',
+  `date` datetime DEFAULT NULL,
+  `deleted` int(11) DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+					
+CREATE TABLE `#__newsletter_mailinglists` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(150) DEFAULT NULL,
+  `description` text,
+  `private` int(11) DEFAULT NULL,
+  `deleted` int(11) DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+					
+CREATE TABLE `#__newsletter_mailinglist_unsubscribes` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `mid` int(11) DEFAULT NULL,
+  `email` varchar(150) DEFAULT NULL,
+  `reason` text,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+					
+CREATE TABLE `#__newsletter_mailinglist_emails` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `mid` int(11) DEFAULT NULL,
+  `email` varchar(150) DEFAULT NULL,
+  `status` varchar(100) DEFAULT NULL,
+  `confirmed` int(11) DEFAULT '0',
+  `date_added` datetime DEFAULT NULL,
+  `date_confirmed` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+					
+CREATE TABLE `#__newsletter_mailing_recipients` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `mid` int(11) DEFAULT NULL,
+  `email` varchar(150) DEFAULT NULL,
+  `status` varchar(100) DEFAULT NULL,
+  `date_added` datetime DEFAULT NULL,
+  `date_sent` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+					
+CREATE TABLE `#__newsletter_mailing_recipient_actions` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `mailingid` int(11) DEFAULT NULL,
+  `action` varchar(100) DEFAULT NULL,
+  `action_vars` text,
+  `email` varchar(255) DEFAULT NULL,
+  `ip` varchar(100) DEFAULT NULL,
+  `user_agent` varchar(255) DEFAULT NULL,
+  `date` datetime DEFAULT NULL,
+  `countrySHORT` char(2) DEFAULT NULL,
+  `countryLONG` varchar(64) DEFAULT NULL,
+  `ipREGION` varchar(128) DEFAULT NULL,
+  `ipCITY` varchar(128) DEFAULT NULL,
+  `ipLATITUDE` double DEFAULT NULL,
+  `ipLONGITUDE` double DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__oaipmh_dcspecs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `query` text NOT NULL,
+  `display` int(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__oauthp_consumers` (
@@ -1600,6 +2432,7 @@ CREATE TABLE `#__profile_completion_awards` (
   `last_bothered` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `bothered_times` int(11) NOT NULL DEFAULT '0',
   `edited_profile` tinyint(4) NOT NULL DEFAULT '0',
+  mailPreferenceOption int not null default 0,
   PRIMARY KEY (`user_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
@@ -1633,6 +2466,32 @@ CREATE TABLE `#__project_comments` (
   `admin` tinyint(2) DEFAULT '0',
   `tbl` varchar(50) NOT NULL DEFAULT 'blog',
   PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__project_databases` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `project` int(11) NOT NULL,
+  `database_name` varchar(64) NOT NULL,
+  `title` varchar(127) NOT NULL DEFAULT '',
+  `source_file` varchar(127) NOT NULL,
+  `source_dir` varchar(127) NOT NULL,
+  `source_revision` varchar(56) NOT NULL,
+  `description` text,
+  `data_definition` text,
+  `revision` int(11) DEFAULT NULL,
+  `created` datetime DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `updated` datetime DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__project_database_versions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `database_name` varchar(64) NOT NULL,
+  `version` int(11) NOT NULL DEFAULT '1',
+  `data_definition` text,
+  PRIMARY KEY (`id`,`database_name`,`version`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__project_microblog` (
@@ -1891,16 +2750,6 @@ CREATE TABLE `#__resource_stats_tools_users` (
   UNIQUE KEY `id` (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-CREATE TABLE `#__resource_tags` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `resourceid` int(11) DEFAULT NULL,
-  `tagid` int(11) DEFAULT NULL,
-  `strength` tinyint(3) DEFAULT '0',
-  `taggerid` int(11) DEFAULT '0',
-  `taggedon` datetime DEFAULT '0000-00-00 00:00:00',
-  PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
 CREATE TABLE `#__resource_taxonomy_audience` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `rid` int(11) NOT NULL DEFAULT '0',
@@ -1934,7 +2783,8 @@ CREATE TABLE `#__resource_types` (
   `contributable` int(2) DEFAULT '1',
   `customFields` text,
   `params` text,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_category` (`category`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__resources` (
@@ -2134,6 +2984,127 @@ CREATE TABLE `#__store` (
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
+CREATE TABLE `#__storefront_collections` (
+  `cId` char(50) NOT NULL,
+  `cName` varchar(64) DEFAULT NULL,
+  `cParent` int(16) DEFAULT NULL,
+  `cActive` tinyint(1) DEFAULT NULL,
+  `cType` char(10) DEFAULT NULL,
+  PRIMARY KEY (`cId`),
+  KEY `idx_cActive` (`cActive`),
+  KEY `idx_cParent` (`cParent`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__storefront_coupon_actions` (
+  `cnId` int(16) NOT NULL,
+  `cnaAction` char(25) DEFAULT NULL,
+  `cnaVal` char(255) DEFAULT NULL,
+  UNIQUE KEY `uidx_cnId_cnaAction` (`cnId`,`cnaAction`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+		
+CREATE TABLE `#__storefront_coupon_conditions` (
+  `cnId` int(16) NOT NULL,
+  `cncRule` char(100) DEFAULT NULL,
+  `cncVal` char(255) DEFAULT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__storefront_coupon_objects` (
+  `cnId` int(16) NOT NULL,
+  `cnoObjectId` int(16) DEFAULT NULL,
+  `cnoObjectsLimit` int(5) DEFAULT '0' COMMENT 'How many objects can be applied to. 0 - unlimited',
+  UNIQUE KEY `uidx_cnId_cnoObjectId` (`cnId`,`cnoObjectId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__storefront_coupons` (
+  `cnId` int(16) NOT NULL AUTO_INCREMENT,
+  `cnCode` char(25) DEFAULT NULL,
+  `cnDescription` char(255) DEFAULT NULL,
+  `cnExpires` date DEFAULT NULL,
+  `cnUseLimit` int(5) unsigned DEFAULT NULL,
+  `cnObject` char(15) NOT NULL,
+  `cnActive` tinyint(1) DEFAULT '1',
+  PRIMARY KEY (`cnId`),
+  UNIQUE KEY `uidx_cnCode` (`cnCode`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__storefront_option_groups` (
+  `ogId` int(16) NOT NULL AUTO_INCREMENT,
+  `ogName` char(16) DEFAULT NULL,
+  PRIMARY KEY (`ogId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+		
+CREATE TABLE `#__storefront_options` (
+  `oId` int(16) NOT NULL AUTO_INCREMENT,
+  `ogId` int(16) DEFAULT NULL COMMENT 'Foreign key to option-groups',
+  `oName` char(255) DEFAULT NULL,
+  PRIMARY KEY (`oId`),
+  UNIQUE KEY `uidx_ogId_oName` (`ogId`,`oName`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__storefront_product_collections` (
+  `cllId` int(16) NOT NULL AUTO_INCREMENT,
+  `pId` int(16) NOT NULL,
+  `cId` char(50) NOT NULL,
+  PRIMARY KEY (`cllId`,`pId`,`cId`),
+  UNIQUE KEY `uidx_pId_cId` (`pId`,`cId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+		
+CREATE TABLE `#__storefront_product_option_groups` (
+  `pId` int(16) NOT NULL,
+  `ogId` int(16) NOT NULL,
+  PRIMARY KEY (`pId`,`ogId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+	
+CREATE TABLE `#__storefront_product_types` (
+  `ptId` int(16) NOT NULL AUTO_INCREMENT,
+  `ptName` char(128) DEFAULT NULL,
+  `ptModel` char(25) DEFAULT 'normal',
+  PRIMARY KEY (`ptId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__storefront_products` (
+  `pId` int(16) NOT NULL AUTO_INCREMENT,
+  `ptId` int(16) NOT NULL COMMENT 'Product type ID. Foreign key to product_types table',
+  `pName` char(128) DEFAULT NULL,
+  `pTagline` tinytext,
+  `pDescription` text,
+  `pFeatures` text,
+  `pActive` tinyint(1) DEFAULT '1',
+  PRIMARY KEY (`pId`),
+  KEY `idx_pActive` (`pActive`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__storefront_sku_meta` (
+  `smId` int(16) NOT NULL AUTO_INCREMENT,
+  `sId` int(16) NOT NULL,
+  `smKey` varchar(100) DEFAULT NULL,
+  `smValue` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`smId`),
+  UNIQUE KEY `uidx_sId_smKey` (`sId`,`smKey`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+$query = "CREATE TABLE `#__storefront_sku_options` (
+  `sId` int(16) NOT NULL,
+  `oId` int(16) NOT NULL,
+  PRIMARY KEY (`sId`,`oId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__storefront_skus` (
+  `sId` int(16) NOT NULL AUTO_INCREMENT,
+  `pId` int(16) DEFAULT NULL COMMENT 'Foreign key to products',
+  `sSku` char(16) DEFAULT NULL,
+  `sWeight` decimal(10,2) DEFAULT NULL,
+  `sPrice` decimal(10,2) DEFAULT NULL,
+  `sDescriprtion` text,
+  `sFeatures` text,
+  `sTrackInventory` tinyint(1) DEFAULT '0',
+  `sInventory` int(11) DEFAULT '0',
+  `sEnumerable` tinyint(1) DEFAULT '1',
+  `sAllowMultiple` tinyint(1) DEFAULT '1',
+  `sActive` tinyint(1) DEFAULT '1',
+  PRIMARY KEY (`sId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
 CREATE TABLE `#__support_acl_acos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `model` varchar(100) DEFAULT NULL,
@@ -2219,20 +3190,11 @@ CREATE TABLE `#__support_sections` (
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-CREATE TABLE `#__support_tags` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `ticketid` int(11) DEFAULT NULL,
-  `tagid` int(11) DEFAULT NULL,
-  `strength` tinyint(3) DEFAULT '0',
-  `taggerid` int(11) DEFAULT '0',
-  `taggedon` datetime DEFAULT '0000-00-00 00:00:00',
-  PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
 CREATE TABLE `#__support_tickets` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `status` tinyint(3) DEFAULT '0',
   `created` datetime DEFAULT '0000-00-00 00:00:00',
+  `closed` DATETIME  NOT NULL  DEFAULT '0000-00-00 00:00:00',
   `login` varchar(200) DEFAULT NULL,
   `severity` varchar(30) DEFAULT NULL,
   `owner` varchar(50) DEFAULT NULL,
@@ -2255,6 +3217,15 @@ CREATE TABLE `#__support_tickets` (
   `group` varchar(250) DEFAULT NULL,
   `open` tinyint(3) NOT NULL DEFAULT '1',
   PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__support_watching` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `ticket_id` int(11) NOT NULL DEFAULT '0',
+  `user_id` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_ticket_id` (`ticket_id`),
+  KEY `idx_user_id` (`user_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__tags` (
@@ -2623,8 +3594,6 @@ CREATE TABLE `venue_countries` (
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-
-
 CREATE TABLE `#__vote_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `referenceid` int(11) NOT NULL DEFAULT '0',
@@ -2733,6 +3702,19 @@ CREATE TABLE `#__wiki_page_author` (
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
+CREATE TABLE `#__wiki_page_links` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `page_id` int(11) NOT NULL DEFAULT '0',
+  `timestamp` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `scope` varchar(50) NOT NULL DEFAULT '',
+  `scope_id` int(11) NOT NULL DEFAULT '0',
+  `link` varchar(255) NOT NULL DEFAULT '',
+  `url` varchar(250) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  KEY `idx_page_id` (`page_id`),
+  KEY `idx_scope_scope_id` (`scope`,`scope_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
 CREATE TABLE `#__wiki_page_metrics` (
   `pageid` int(11) NOT NULL DEFAULT '0',
   `pagename` varchar(100) DEFAULT NULL,
@@ -2814,8 +3796,8 @@ CREATE TABLE `#__wishlist_item` (
   `private` int(3) DEFAULT '0',
   `accepted` int(3) DEFAULT '0',
   PRIMARY KEY (`id`),
-  KEY `#__wishlist_item_wishlist_idx` (`wishlist`),
-  FULLTEXT KEY `#__wishlist_item_subject_about_ftidx` (`subject`,`about`)
+  KEY `idx_wishlist` (`wishlist`),
+  FULLTEXT KEY `ftidx_subject_about` (`subject`,`about`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__wishlist_ownergroups` (
@@ -2842,7 +3824,7 @@ CREATE TABLE `#__wishlist_vote` (
   `effort` int(3) DEFAULT '0',
   `due` datetime DEFAULT '0000-00-00 00:00:00',
   PRIMARY KEY (`id`),
-  KEY `#__wishlist_vote_wishid_idx` (`wishid`)
+  KEY `idx_wishid` (`wishid`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__xdomain_users` (
@@ -2888,27 +3870,13 @@ CREATE TABLE `#__xgroups` (
   `created_by` int(11) DEFAULT NULL,
   `params` text,
   PRIMARY KEY (`gidNumber`),
-  FULLTEXT KEY `#__xgroups_cn_description_public_desc_ftidx` (`cn`,`description`,`public_desc`)
+  FULLTEXT KEY `ftidx_cn_description_public_desc` (`cn`,`description`,`public_desc`)
 ) ENGINE=MyISAM AUTO_INCREMENT=1000 DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__xgroups_applicants` (
   `gidNumber` int(11) NOT NULL,
   `uidNumber` int(11) NOT NULL,
   PRIMARY KEY (`gidNumber`,`uidNumber`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
-CREATE TABLE `#__xgroups_events` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `gidNumber` int(11) NOT NULL,
-  `actorid` int(11) NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `details` text NOT NULL,
-  `type` varchar(50) NOT NULL,
-  `start` datetime NOT NULL,
-  `end` datetime NOT NULL,
-  `active` tinyint(1) NOT NULL,
-  `created` datetime NOT NULL,
-  PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__xgroups_inviteemails` (
@@ -3054,7 +4022,9 @@ CREATE TABLE `#__xmessage_recipient` (
   `expires` datetime DEFAULT '0000-00-00 00:00:00',
   `actionid` int(11) DEFAULT '0',
   `state` tinyint(2) DEFAULT '0',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_mid` (`mid`),
+  KEY `idx_uid` (`uid`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__xmessage_seen` (
@@ -3097,7 +4067,7 @@ CREATE TABLE `#__xprofiles` (
   `gender` varchar(255) NOT NULL DEFAULT '',
   `url` varchar(255) NOT NULL DEFAULT '',
   `reason` text NOT NULL,
-  `mailPreferenceOption` int(11) NOT NULL DEFAULT '0',
+  `mailPreferenceOption` int(11) NOT NULL DEFAULT '-1',
   `usageAgreement` int(11) NOT NULL DEFAULT '0',
   `jobsAllowed` int(11) NOT NULL DEFAULT '0',
   `modifiedDate` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
@@ -3122,6 +4092,21 @@ CREATE TABLE `#__xprofiles` (
   KEY `username` (`username`),
   FULLTEXT KEY `author` (`givenName`,`surname`),
   FULLTEXT KEY `#__xprofiles_name_ftidx` (`name`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `#__xprofiles_address` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `uidNumber` int(11) DEFAULT NULL,
+  `addressTo` varchar(200) DEFAULT NULL,
+  `address1` varchar(255) DEFAULT NULL,
+  `address2` varchar(255) DEFAULT NULL,
+  `addressCity` varchar(200) DEFAULT NULL,
+  `addressRegion` varchar(200) DEFAULT NULL,
+  `addressPostal` varchar(200) DEFAULT NULL,
+  `addressCountry` varchar(200) DEFAULT NULL,
+  `addressLatitude` float DEFAULT NULL,
+  `addressLongitude` float DEFAULT NULL,
+  PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `#__xprofiles_admin` (
@@ -3217,7 +4202,7 @@ CREATE TABLE `#__ysearch_site_map` (
   `description` text NOT NULL,
   `link` varchar(200) NOT NULL,
   PRIMARY KEY (`id`),
-  FULLTEXT KEY `#__ysearch_site_map_title_description_ftidx` (`title`,`description`)
+  FULLTEXT KEY `ftidx_title_description` (`title`,`description`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `session` (
@@ -3326,6 +4311,16 @@ CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY INVOKER VIEW `#
         left join `#__resource_contributors_view` `r` ON ((`r`.`uidNumber` = `c`.`uidNumber`)))
         left join `#__wiki_contributors_view` `w` ON ((`w`.`uidNumber` = `c`.`uidNumber`)));
 
+CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY INVOKER VIEW `#__courses_form_latest_responses_view` AS 
+    SELECT `fre`.`id` AS `id`,
+        `fre`.`respondent_id` AS `respondent_id`,
+        `fre`.`question_id` AS `question_id`,
+        `fre`.`answer_id` AS `answer_id`
+    FROM `#__courses_form_responses` `fre` where ((select count(0) from `#__courses_form_responses` `frei` 
+    where ((`frei`.`respondent_id` = `fre`.`respondent_id`) and (`frei`.`id` > `fre`.`id`))) < 
+    (select count(distinct `frei`.`question_id`) from `#__courses_form_responses` `frei` 
+    where (`frei`.`respondent_id` = `fre`.`respondent_id`)));
+
 INSERT INTO `#__components` VALUES (1, 'Banners', '', 0, 0, '', 'Banner Management', 'com_banners', 0, 'js/ThemeOffice/component.png', 0, 'track_impressions=0\ntrack_clicks=0\ntag_prefix=\n\n', 1);
 INSERT INTO `#__components` VALUES (2, 'Banners', '', 0, 1, 'option=com_banners', 'Active Banners', 'com_banners', 1, 'js/ThemeOffice/edit.png', 0, '', 1);
 INSERT INTO `#__components` VALUES (3, 'Clients', '', 0, 1, 'option=com_banners&c=client', 'Manage Clients', 'com_banners', 2, 'js/ThemeOffice/categories.png', 0, '', 1);
@@ -3359,74 +4354,79 @@ INSERT INTO `#__components` VALUES (31, 'User Manager', '', 0, 0, '', 'Users', '
 INSERT INTO `#__components` VALUES (32, 'Cache Manager', '', 0, 0, '', 'Cache', 'com_cache', 0, '', 1, '', 1);
 INSERT INTO `#__components` VALUES (33, 'Control Panel', '', 0, 0, '', 'Control Panel', 'com_cpanel', 0, '', 1, '', 1);
 INSERT INTO `#__components` VALUES (34,'Answers','option=com_answers',0,0,'option=com_answers','Answers','com_answers',0,'js/ThemeOffice/component.png',0,'infolink=/kb/points\nnotify_users=\n\n',1);
+INSERT INTO `#__components` VALUES (35,'Courses','option=com_courses',0,0,'option=com_courses','Courses','com_courses',0, 'js/ThemeOffice/component.png',0,'',0);
+INSERT INTO `#__components` VALUES (36,'Usage','option=com_usage',0,0,'option=com_usage','Usage','com_usage',0,'js/ThemeOffice/component.png',0,'statsDBDriver=mysql\nstatsDBHost=localhost\nstatsDBPort=\nstatsDBUsername=\nstatsDBPassword=\nstatsDBDatabase=\nstatsDBPrefix=\nmapsApiKey=\nstats_path=/site/stats\nmaps_path=/site/stats/maps\nplots_path=/site/stats/plots\ncharts_path=/site/stats/plots\n\n',1);
+INSERT INTO `#__components` VALUES (37,'Citations','option=com_citations',0,0,'option=com_citations','Citations','com_citations',0,'js/ThemeOffice/component.png',0,'citation_label=number\ncitation_rollover=no\ncitation_sponsors=yes\ncitation_import=1\ncitation_bulk_import=1\ncitation_download=1\ncitation_batch_download=1\ncitation_download_exclude=\ncitation_coins=1\ncitation_openurl=1\ncitation_url=url\ncitation_custom_url=\ncitation_cited=0\ncitation_cited_single=\ncitation_cited_multiple=\ncitation_show_tags=no\ncitation_allow_tags=no\ncitation_show_badges=no\ncitation_allow_badges=no\ncitation_format=\n\n',1);
 INSERT INTO `#__components` VALUES (38,'Events','option=com_events',0,0,'option=com_events','Events','com_events',0,'js/ThemeOffice/component.png',0,'',1);
 INSERT INTO `#__components` VALUES (39,'Manage Events','',0,38,'option=com_events','Manage Events','com_events',0,'js/ThemeOffice/component.png',0,'',1);
 INSERT INTO `#__components` VALUES (40,'Manage Events Categories','',0,38,'option=com_events&task=cats','Manage Events Categories','com_events',1,'js/ThemeOffice/component.png',0,'',1);
 INSERT INTO `#__components` VALUES (41,'Edit Config','',0,38,'option=com_events&task=configure','Edit Config','com_events',2,'js/ThemeOffice/component.png',0,'',1);
 INSERT INTO `#__components` VALUES (42,'Groups','option=com_groups',0,0,'option=com_groups','Groups','com_groups',0,'js/ThemeOffice/component.png',0,'uploadpath=/site/groups\niconpath=/components/com_groups/assets/img/icons\njoin_policy=0\nprivacy=0\nauto_approve=1\ndisplay_system_users=no\nemail_comment_processing=1\nemail_member_groupsidcussionemail_autosignup=0\nintro_mygroups=1\nintro_interestinggroups=1\nintro_populargroups=1\n\n',1);
-INSERT INTO `#__components` VALUES (35,'Topics','option=com_topics',0,0,'','','com_topics',0,'js/ThemeOffice/component.png',0,'',0);
-INSERT INTO `#__components` VALUES (36,'Usage','option=com_usage',0,0,'option=com_usage','Usage','com_usage',0,'js/ThemeOffice/component.png',0,'statsDBDriver=mysql\nstatsDBHost=localhost\nstatsDBPort=\nstatsDBUsername=\nstatsDBPassword=\nstatsDBDatabase=\nstatsDBPrefix=\nmapsApiKey=\nstats_path=/site/stats\nmaps_path=/site/stats/maps\nplots_path=/site/stats/plots\ncharts_path=/site/stats/plots\n\n',1);
-INSERT INTO `#__components` VALUES (37,'Citations','option=com_citations',0,0,'option=com_citations','Citations','com_citations',0,'js/ThemeOffice/component.png',0,'citation_label=number\ncitation_rollover=no\ncitation_sponsors=yes\ncitation_import=1\ncitation_bulk_import=1\ncitation_download=1\ncitation_batch_download=1\ncitation_download_exclude=\ncitation_coins=1\ncitation_openurl=1\ncitation_url=url\ncitation_custom_url=\ncitation_cited=0\ncitation_cited_single=\ncitation_cited_multiple=\ncitation_show_tags=no\ncitation_allow_tags=no\ncitation_show_badges=no\ncitation_allow_badges=no\ncitation_format=\n\n',1);
+INSERT INTO `#__components` VALUES (43,'System','',0,42,'option=com_groups&controller=system','System','com_groups',1,'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (44,'Manage','',0,42,'option=com_groups&controller=manage','Manage','com_groups',0,'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (45,'WhatsNew','option=com_whatsnew',0,0,'','','com_whatsnew',0,'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (46, 'Help', 'option=com_help', 0, 0, '', '', 'com_help', 0, '', 0, '', 1);
+INSERT INTO `#__components` VALUES (47,'Tags','option=com_tags',0,0,'option=com_tags','Tags','com_tags',0,'js/ThemeOffice/component.png',0,'focus_area_01=\nfocus_area_02=\nfocus_area_03=\nfocus_area_04=\nfocus_area_05=\nfocus_area_06=\nfocus_area_07=\nfocus_area_08=\nfocus_area_09=\nfocus_area_10=\n\n',1);
 INSERT INTO `#__components` VALUES (48,'Feedback','option=com_feedback',0,0,'option=com_feedback','Feedback','com_feedback',0,'js/ThemeOffice/component.png',0,'defaultpic=/components/com_feedback/assets/img/contributor.gif\nuploadpath=/site/quotes\nmaxAllowed=40000000\nfile_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\nblacklist=\nbadwords=viagra, pharmacy, xanax, phentermine, dating, ringtones, tramadol, hydrocodone, levitra, ambien, vicodin, fioricet, diazepam, cash advance, free online, online gambling, online prescriptions, debt consolidation, baccarat, loan, slots, credit, mortgage, casino, slot, texas holdem, teen nude, orgasm, gay, fuck, crap, shit, asshole, cunt, fucker, fuckers, motherfucker, fucking, milf, cocksucker, porno, videosex, sperm, hentai, internet gambling, kasino, kasinos, poker, lottery, texas hold em, texas holdem, fisting\n\n',1);
+INSERT INTO `#__components` VALUES (49,'Submitted Quotes','option=com_feedback&type=submitted',0,48,'option=com_feedback&type=submitted','Submitted Quotes','com_feedback',1,'js/ThemeOffice/component.png',0,'defaultpic=/components/com_feedback/assets/img/contributor.gif\nuploadpath=/site/quotes\nmaxAllowed=40000000\nfile_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\nblacklist=\nbadwords=viagra, pharmacy, xanax, phentermine, dating, ringtones, tramadol, hydrocodone, levitra, ambien, vicodin, fioricet, diazepam, cash advance, free online, online gambling, online prescriptions, debt consolidation, baccarat, loan, slots, credit, mortgage, casino, slot, texas holdem, teen nude, orgasm, gay, fuck, crap, shit, asshole, cunt, fucker, fuckers, motherfucker, fucking, milf, cocksucker, porno, videosex, sperm, hentai, internet gambling, kasino, kasinos, poker, lottery, texas hold em, texas holdem, fisting\n\n',1);
+INSERT INTO `#__components` VALUES (50,'Selected Quotes','option=com_feedback&type=selected',0,48,'option=com_feedback&type=selected','Selected Quotes','com_feedback',2,'js/ThemeOffice/component.png',0,'defaultpic=/components/com_feedback/assets/img/contributor.gif\nuploadpath=/site/quotes\nmaxAllowed=40000000\nfile_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\nblacklist=\nbadwords=viagra, pharmacy, xanax, phentermine, dating, ringtones, tramadol, hydrocodone, levitra, ambien, vicodin, fioricet, diazepam, cash advance, free online, online gambling, online prescriptions, debt consolidation, baccarat, loan, slots, credit, mortgage, casino, slot, texas holdem, teen nude, orgasm, gay, fuck, crap, shit, asshole, cunt, fucker, fuckers, motherfucker, fucking, milf, cocksucker, porno, videosex, sperm, hentai, internet gambling, kasino, kasinos, poker, lottery, texas hold em, texas holdem, fisting\n\n',1);
+INSERT INTO `#__components` VALUES (51, 'Cron', 'option=com_cron', 0, 0, 'option=com_cron', 'Cron', 'com_cron', 0, '', 0, ' ', 1);
+INSERT INTO `#__components` VALUES (52,'Knowledgebase','option=com_kb',0,0,'option=com_kb','Knowledgebase','com_kb',0,'js/ThemeOffice/component.png',0,'show_date=2\nallow_comments=1\nclose_comments=year\nfeeds_enabled=1\nfeed_entries=partial\n\n',1);
+INSERT INTO `#__components` VALUES (53, 'Categories', 'option=com_kb&controller=categories', 0, 52, 'option=com_kb&controller=categories', 'Categories', 'com_kb', 1, 'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (54,'Articles','option=com_kb&controller=articles',0, 52, 'option=com_kb&controller=articles', 'Articles','com_kb',2,'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (55,'Forum','option=com_forum',0,0,'option=com_forum','Forum','com_forum',0,'',0,'',1);
+INSERT INTO `#__components` VALUES (56,'Wiki','option=com_wiki',0,0,'option=com_wiki','Wiki','com_wiki',0,'js/ThemeOffice/component.png',0,'subpage_separator=/\nhomepage=MainPage\nmax_pagename_length=100\nfilepath=/site/wiki\nmathpath=/site/wiki/math\ntmppath=/site/wiki/tmp\nmaxAllowed=40000000\nimg_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\nfile_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif,pdf,zip,mpg,mpeg,avi,mov,wmv,asf,asx,ra,rm,txt,rtf,doc,xsl,html,js,wav,mp3,eps,ppt,pps,swf,tar,tex,gz\n\n',1);
 INSERT INTO `#__components` VALUES (57,'Support','option=com_support',0,0,'option=com_support','Support','com_support',0,'js/ThemeOffice/component.png',0,'feed_summary=0\nseverities=critical,major,normal,minor,trivial\nwebpath=/site/tickets\nmaxAllowed=40000000\nfile_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\ngroup=\nemails={config.mailfrom}\nblacklist=\nbadwords=viagra, pharmacy, xanax, phentermine, dating, ringtones, tramadol, hydrocodone, levitra, ambien, vicodin, fioricet, diazepam, cash advance, free online, online gambling, online prescriptions, debt consolidation, baccarat, loan, slots, credit, mortgage, casino, slot, texas holdem, teen nude, orgasm, gay, fuck, crap, shit, asshole, cunt, fucker, fuckers, motherfucker, fucking, milf, cocksucker, porno, videosex, sperm, hentai, internet gambling, kasino, kasinos, poker, lottery, texas hold em, texas holdem, fisting\nemail_processing=1\n\n',1);
+INSERT INTO `#__components` VALUES (58,'Stats','',0,57,'option=com_support&controller=stats','Stats','com_support',6,'js/ThemeOffice/component.png',0,'',1);
 INSERT INTO `#__components` VALUES (59,'Messages','',0,57,'option=com_support&controller=messages','Messages','com_support',2,'js/ThemeOffice/component.png',0,'',1);
 INSERT INTO `#__components` VALUES (60,'Resolutions','',0,57,'option=com_support&controller=resolutions','Resolutions','com_support',3,'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (61,'Tag/Group','',0,57,'option=com_support&controller=taggroups','Tag/Group','com_support',5,'js/ThemeOffice/component.png',0,'',1);
 INSERT INTO `#__components` VALUES (62,'Tickets','',0,57,'option=com_support&controller=tickets','Tickets','com_support',1,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (45,'WhatsNew','option=com_whatsnew',0,0,'','','com_whatsnew',0,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (52,'Knowledgebase','option=com_kb',0,0,'option=com_kb','Knowledgebase','com_kb',0,'js/ThemeOffice/component.png',0,'show_date=2\nallow_comments=1\nclose_comments=year\nfeeds_enabled=1\nfeed_entries=partial\n\n',1);
+INSERT INTO `#__components` VALUES (63,'ACL','',0,57,'option=com_support&controller=acl','ACL','com_support',7,'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (64,'Abuse Reports','',0,57,'option=com_support&controller=abusereports','Abuse Reports','com_support',4,'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (65,'Wishlists','option=com_wishlist',0,0,'option=com_wishlist','Wishlists','com_wishlist',0,'js/ThemeOffice/component.png',0,'categories=general, resource, group, user\ngroup=hubdev\nbanking=0\nallow_advisory=0\nvotesplit=0\nwebpath=/site/wishlist\nshow_percentage_granted=0\n\n',1);
+INSERT INTO `#__components` VALUES (66,'Features','option=com_features',0,0,'','','com_features',0,'js/ThemeOffice/component.png',0,'',1);
 INSERT INTO `#__components` VALUES (67,'Resources','option=com_resources',0,0,'option=com_resources','Resources','com_resources',0,'js/ThemeOffice/component.png',0,'autoapprove=0\nautoapproved_users=nikki\ncc_license=1\ncc_license_custom=0\nemail_when_approved=0\ndefaultpic=/components/com_resources/images/resource_thumb.gif\ntagstool=screenshots,poweredby,bio,credits,citations,sponsoredby,references,publications\ntagsothr=bio,credits,citations,sponsoredby,references,publications\naccesses=Public,Registered,Special,Protected,Private\nwebpath=/site/resources\ntoolpath=/site/resources/tools\nuploadpath=/site/resources\nmaxAllowed=40000000\nfile_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif,pdf,zip,mpg,mpeg,avi,mov,wmv,asf,asx,ra,rm,txt,rtf,doc,xsl,html,js,wav,mp3,eps,ppt,pps,swf,tar,tex,gz\ndoi=\naboutdoi=\nsupportedtag=\nsupportedlink=\nbrowsetags=on\ngoogle_id=\nshow_authors=1\nshow_assocs=1\nshow_ranking=0\nshow_rating=1\nshow_date=3\nshow_metadata=1\nshow_citation=1\nshow_audience=0\naudiencelink=\n\n',1);
 INSERT INTO `#__components` VALUES (68,'Types','',0,67,'option=com_resources&controller=types','Types','com_resources',2,'js/ThemeOffice/component.png',0,'',1);
 INSERT INTO `#__components` VALUES (69,'Orphans','',0,67,'option=com_resources&task=orphans','Orphans','com_resources',1,'js/ThemeOffice/component.png',0,'',1);
 INSERT INTO `#__components` VALUES (70,'Entries','',0,67,'option=com_resources&controller=items','Entries','com_resources',0,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (47,'Tags','option=com_tags',0,0,'option=com_tags','Tags','com_tags',0,'js/ThemeOffice/component.png',0,'focus_area_01=\nfocus_area_02=\nfocus_area_03=\nfocus_area_04=\nfocus_area_05=\nfocus_area_06=\nfocus_area_07=\nfocus_area_08=\nfocus_area_09=\nfocus_area_10=\n\n',1);
-INSERT INTO `#__components` VALUES (77,'Hosts','option=com_tools&controller=hosts',0,75,'option=com_tools&controller=hosts','Hosts','com_tools',1,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (75,'Tools','option=com_tools',0,0,'option=com_tools','','com_tools',0,'js/ThemeOffice/component.png',0,'mw_on=1\nmw_redirect=/home\nstopRedirect=index.php?option=com_members&task=myaccount\nmwDBDriver=\nmwDBHost=localhost\nmwDBPort=\nmwDBUsername=\nmwDBPassword=\nmwDBDatabase=\nmwDBPrefix=\nshareable=1\nwarn_multiples=0\nstoragehost=tcp://localhost:300\nshow_storage=1\ncontribtool_on=1\nadmingroup=apps\ndefault_mw=narwhal\ndefault_vnc=780x600\ndeveloper_site=\nproject_path=/tools/\ninvokescript_dir=/apps\ndev_suffix=_dev\ngroup_prefix=app-\ndemo_url=\nusedoi=\ndoi_service=\nexec_pu=1\nscreenshot_edit=0\n\n',1);
-INSERT INTO `#__components` VALUES (80,'Members','option=com_members',0,0,'option=com_members','Members','com_members',0,'js/ThemeOffice/component.png',0,'privacy=1\nbankAccounts=0\ndefaultpic=/components/com_members/assets/img/profile.gif\nwebpath=/site/members\nhomedir=\nmaxAllowed=40000000\nfile_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\nuser_messaging=1\nemployeraccess=0\nshadowMax=120\nshadowMin=0\nshadowWarning=7\n\n',1);
-INSERT INTO `#__components` VALUES (94,'Store','option=com_store',0,0,'option=com_store','Store','com_store',0,'js/ThemeOffice/component.png',0,'store_enabled=1\nwebpath=/site/store\nhubaddress_ln1=\nhubaddress_ln2=\nhubaddress_ln3=\nhubaddress_ln4=\nhubaddress_ln5=\nhubemail=\nhubphone=\nheadertext_ln1=\nheadertext_ln2=\nfootertext=\nreceipt_title=Your Order at Hub Store\nreceipt_note=Thank you for contributing to our hub!\n\n',1);
-INSERT INTO `#__components` VALUES (65,'Wishlists','option=com_wishlist',0,0,'option=com_wishlist','Wishlists','com_wishlist',0,'js/ThemeOffice/component.png',0,'categories=general, resource, group, user\ngroup=hubdev\nbanking=0\nallow_advisory=0\nvotesplit=0\nwebpath=/site/wishlist\nshow_percentage_granted=0\n\n',1);
-INSERT INTO `#__components` VALUES (66,'Features','option=com_features',0,0,'','','com_features',0,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (58,'Stats','',0,57,'option=com_support&controller=stats','Stats','com_support',6,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (76,'Pipeline','option=com_tools&controller=pipeline',0,75,'option=com_tools&controller=pipeline','Pipeline','com_tools',0,'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (71,'Roles','',0,67,'option=com_resources&controller=roles','Roles','com_resources',3,'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (72,'Licenses','',0,67,'option=com_resources&controller=licenses','Licenses','com_resources',4,'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (73,'Plugins','',0,67,'option=com_resources&controller=plugins','Plugins','com_resources',5,'js/ThemeOffice/component.png',0,'',1);
 INSERT INTO `#__components` VALUES (74,'Blog','option=com_blog',0,0,'option=com_blog','Blog','com_blog',0,'js/ThemeOffice/component.png',0,'title=\nuploadpath=/site/blog\ncleanintro=1\nintrolength=300\nshow_authors=1\nallow_comments=1\nfeeds_enabled=1\nfeed_entries=partial\nshow_date=3\n\n',1);
-INSERT INTO `#__components` VALUES (61,'Tag/Group','',0,57,'option=com_support&controller=taggroups','Tag/Group','com_support',5,'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (75,'Tools','option=com_tools',0,0,'option=com_tools','','com_tools',0,'js/ThemeOffice/component.png',0,'mw_on=1\nmw_redirect=/home\nstopRedirect=index.php?option=com_members&task=myaccount\nmwDBDriver=\nmwDBHost=localhost\nmwDBPort=\nmwDBUsername=\nmwDBPassword=\nmwDBDatabase=\nmwDBPrefix=\nshareable=1\nwarn_multiples=0\nstoragehost=tcp://localhost:300\nshow_storage=1\ncontribtool_on=1\nadmingroup=apps\ndefault_mw=narwhal\ndefault_vnc=780x600\ndeveloper_site=\nproject_path=/tools/\ninvokescript_dir=/apps\ndev_suffix=_dev\ngroup_prefix=app-\ndemo_url=\nusedoi=\ndoi_service=\nexec_pu=1\nscreenshot_edit=0\n\n',1);
+INSERT INTO `#__components` VALUES (76, 'Pipeline', 'option=com_tools&controller=pipeline', 0, 75, 'option=com_tools&controller=pipeline', 'Pipeline', 'com_tools', 0, 'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (77,'Hosts','option=com_tools&controller=hosts',0,75,'option=com_tools&controller=hosts','Hosts','com_tools',1,'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (78,'Host Types','option=com_tools&controller=hosttypes',0,75,'option=com_tools&controller=hosttypes','Host Types','com_tools',2,'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (79,'Search','',0,0,'option=com_ysearch&task=configure','YSearch Management','com_ysearch',0,'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (80,'Members','option=com_members',0,0,'option=com_members','Members','com_members',0,'js/ThemeOffice/component.png',0,'privacy=1\nbankAccounts=0\ndefaultpic=/components/com_members/assets/img/profile.gif\nwebpath=/site/members\nhomedir=\nmaxAllowed=40000000\nfile_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\nuser_messaging=1\nemployeraccess=0\nshadowMax=120\nshadowMin=0\nshadowWarning=7\n\n',1);
+INSERT INTO `#__components` VALUES (81, 'Members', 'option=com_members&controller=members', 0, 80, 'option=com_members&controller=members', 'Members', 'com_members',1,'js/ThemeOffice/component.png',0,'ldapProfileMirror=1\ndefaultpic=/components/com_members/images/profile.gif\nwebpath=/site/members\nmaxAllowed=40000000\nfile_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\nuser_messaging=1\nprivacy=1\naccess_org=0\naccess_orgtype=0\naccess_email=2\naccess_url=0\naccess_phone=2\naccess_tags=0\naccess_bio=0\naccess_countryorigin=0\naccess_countryresident=0\naccess_gender=0\naccess_race=2\naccess_hispanic=2\naccess_disability=2\naccess_optin=2\nemployeraccess=0\n\n',1);
+INSERT INTO `#__components` VALUES (82,'Messaging','option=com_members&controller=messages',0,80, 'option=com_members&controller=messages','Messaging','com_members',2,'js/ThemeOffice/component.png',0,'ldapProfileMirror=1\ndefaultpic=/components/com_members/images/profile.gif\nwebpath=/site/members\nmaxAllowed=40000000\nfile_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\nuser_messaging=1\nprivacy=1\naccess_org=0\naccess_orgtype=0\naccess_email=2\naccess_url=0\naccess_phone=2\naccess_tags=0\naccess_bio=0\naccess_countryorigin=0\naccess_countryresident=0\naccess_gender=0\naccess_race=2\naccess_hispanic=2\naccess_disability=2\naccess_optin=2\nemployeraccess=0\n\n',1);
+INSERT INTO `#__components` VALUES (83,'Points','option=com_members&controller=points',0,80, 'option=com_members&controller=points','Points','com_members',3,'js/ThemeOffice/component.png',0,'ldapProfileMirror=1\ndefaultpic=/components/com_members/images/profile.gif\nwebpath=/site/members\nmaxAllowed=40000000\nfile_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\nuser_messaging=1\nprivacy=1\naccess_org=0\naccess_orgtype=0\naccess_email=2\naccess_url=0\naccess_phone=2\naccess_tags=0\naccess_bio=0\naccess_countryorigin=0\naccess_countryresident=0\naccess_gender=0\naccess_race=2\naccess_hispanic=2\naccess_disability=2\naccess_optin=2\nemployeraccess=0\n\n',1);
+INSERT INTO `#__components` VALUES (84,'Plugins','option=com_members&controller=plugins',0,80, 'option=com_members&controller=plugins','Plugins','com_members',4,'js/ThemeOffice/component.png',0,'ldapProfileMirror=1\ndefaultpic=/components/com_members/images/profile.gif\nwebpath=/site/members\nmaxAllowed=40000000\nfile_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\nuser_messaging=1\nprivacy=1\naccess_org=0\naccess_orgtype=0\naccess_email=2\naccess_url=0\naccess_phone=2\naccess_tags=0\naccess_bio=0\naccess_countryorigin=0\naccess_countryresident=0\naccess_gender=0\naccess_race=2\naccess_hispanic=2\naccess_disability=2\naccess_optin=2\nemployeraccess=0\n\n',1);
+INSERT INTO `#__components` VALUES (85,'Projects','option=com_projects',0,0,'option=com_projects','Projects','com_projects',0,'../components/com_hub/images/hubzero-component.png',0,'grantinfo=1\nconfirm_step=1\nedit_settings=1\nrestricted_data=2\napprove_restricted=0\nprivacylink=/legal/privacy\nHIPAAlink=/legal/privacy\nFERPAlink=/legal/privacy\ncreatorgroup=\nadmingroup=projectsadmin\nsdata_group=hipaa_reviewers\nginfo_group=sps_reviewers\nmin_name_length=5\nmax_name_length=25\nreserved_names=clone, temp, test, view, edit, setup, start, deleteimg, intro, features, verify, register, autocomplete, showcount, edit, suspend, reinstate, review, analytics, reports, about, feedback, share, authorize\nwebpath=/srv/projects\noffroot=1\ngitpath=/usr/bin/git\ngitclone=/site/projects/clone/.git\nmaxUpload=10000000\ndefaultQuota=.5\npremiumQuota=1\napproachingQuota=90\npubQuota=1\npremiumPubQuota=20\nimagepath=/site/projects\ndefaultpic=/components/com_projects/assets/img/project.png\nimg_maxAllowed=40000000\nimg_file_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\nmessaging=1\nprivacy=1\nlimit=25\nsidebox_limit=3\ngroup_prefix=pr-\nuse_alias=1\ndocumentation=/kb/projects\n\n',1);
+INSERT INTO `#__components` VALUES (86,'System','option=com_system',0,0,'option=com_system','System','com_system',0,'',0,'geodb_driver=mysql\ngeodb_host=localhost\ngeodb_port=\ngeodb_user=\ngeodb_password=\ngeodb_database=\ngeodb_prefix=\nldap_primary=ldap://127.0.0.1\nldap_secondary=\nldap_basedn=\nldap_searchdn=\nldap_searchpw=\nldap_managerdn=\nldap_managerpw=\nldap_tls=0\n\n',1);
 INSERT INTO `#__components` VALUES (87,'Jobs','option=com_jobs',0,0,'option=com_jobs','Jobs','com_jobs',0,'js/ThemeOffice/component.png',0,'component_enabled=1\nindustry=\nadmingroup=\nspecialgroup=jobsadmin\nautoapprove=1\ndefaultsort=category\njobslimit=25\nallowsubscriptions=1\nusonly=0\nbanking=0\npromoline=For a limited time: FREE Employer Services Basic subscription\ninfolink=kb/jobs\npremium_infolink=\n\n',1);
 INSERT INTO `#__components` VALUES (88,'Categories','',0,87,'option=com_jobs&controller=categories','Categores','com_jobs',2,'js/ThemeOffice/component.png',0,'',1);
 INSERT INTO `#__components` VALUES (89,'Types','',0,87,'option=com_jobs&controller=types','Types','com_jobs',3,'js/ThemeOffice/component.png',0,'',1);
 INSERT INTO `#__components` VALUES (90,'Jobs','',0,87,'option=com_jobs','Jobs','com_jobs',1,'js/ThemeOffice/component.png',0,'',1);
 INSERT INTO `#__components` VALUES (91,'Services','option=com_services',0,0,'option=com_services','Services & Subscriptions','com_services',0,'js/ThemeOffice/component.png',0,'autoapprove=1',1);
-INSERT INTO `#__components` VALUES (92,'Services','option=com_services',0,91,'option=com_services&controller=services','Services','com_services',1,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (93,'Subscriptions','option=com_services',0,91,'option=com_services&controller=subscriptions','Subscriptions','com_services',2,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (43,'System','',0,42,'option=com_groups&controller=system','System','com_groups',1,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (44,'Manage','',0,42,'option=com_groups&controller=manage','Manage','com_groups',0,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (79,'Search','',0,0,'option=com_ysearch&task=configure','YSearch Management','com_ysearch',0,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (63,'ACL','',0,57,'option=com_support&controller=acl','ACL','com_support',7,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (53,'Categories','option=com_kb&controller=categories',0,52,'option=com_kb&controller=categories','Categories','com_kb',1,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (56,'Wiki','option=com_wiki',0,0,'option=com_wiki','Wiki','com_wiki',0,'js/ThemeOffice/component.png',0,'subpage_separator=/\nhomepage=MainPage\nmax_pagename_length=100\nfilepath=/site/wiki\nmathpath=/site/wiki/math\ntmppath=/site/wiki/tmp\nmaxAllowed=40000000\nimg_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\nfile_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif,pdf,zip,mpg,mpeg,avi,mov,wmv,asf,asx,ra,rm,txt,rtf,doc,xsl,html,js,wav,mp3,eps,ppt,pps,swf,tar,tex,gz\n\n',1);
-INSERT INTO `#__components` VALUES (64,'Abuse Reports','',0,57,'option=com_support&controller=abusereports','Abuse Reports','com_support',4,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (55,'Forum','option=com_forum',0,0,'option=com_forum','Forum','com_forum',0,'',0,'',1);
-INSERT INTO `#__components` VALUES (71,'Roles','',0,67,'option=com_resources&controller=roles','Roles','com_resources',3,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (72,'Licenses','',0,67,'option=com_resources&controller=licenses','Licenses','com_resources',4,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (73,'Plugins','',0,67,'option=com_resources&controller=plugins','Plugins','com_resources',5,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (97,'Register','option=com_register',0,0,'option=com_register','Register','com_register',0,'js/Themeoffice/component.png',0,'LoginReturn=\nConfirmationReturn=\npasswordMeter=0\nregistrationUsername=RRUU\nregistrationPassword=RRUU\nregistrationConfirmPassword=RRUU\nregistrationFullname=RRUU\nregistrationEmail=RRUU\nregistrationConfirmEmail=RRUU\nregistrationURL=HOHO\nregistrationPhone=HOHO\nregistrationEmployment=HOHO\nregistrationOrganization=HOHO\nregistrationCitizenship=HHHH\nregistrationResidency=HHHH\nregistrationSex=HHHH\nregistrationDisability=HHHH\nregistrationHispanic=HHHH\nregistrationRace=HHHH\nregistrationInterests=HOHO\nregistrationReason=HOHO\nregistrationOptIn=HOHO\nregistrationCAPTCHA=RHHH\nregistrationTOU=RHHH\n\n',1);
-INSERT INTO `#__components` VALUES (78,'Host Types','option=com_tools&controller=hosttypes',0,75,'option=com_tools&controller=hosttypes','Host Types','com_tools',2,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (54,'Articles','option=com_kb&controller=articles',0,52,'option=com_kb&controller=articles','Articles','com_kb',2,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (81,'Members','option=com_members&controller=members',0,80,'option=com_members&controller=members','Members','com_members',1,'js/ThemeOffice/component.png',0,'ldapProfileMirror=1\ndefaultpic=/components/com_members/images/profile.gif\nwebpath=/site/members\nmaxAllowed=40000000\nfile_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\nuser_messaging=1\nprivacy=1\naccess_org=0\naccess_orgtype=0\naccess_email=2\naccess_url=0\naccess_phone=2\naccess_tags=0\naccess_bio=0\naccess_countryorigin=0\naccess_countryresident=0\naccess_gender=0\naccess_race=2\naccess_hispanic=2\naccess_disability=2\naccess_optin=2\nemployeraccess=0\n\n',1);
-INSERT INTO `#__components` VALUES (82,'Messaging','option=com_members&controller=messages',0,80,'option=com_members&controller=messages','Messaging','com_members',2,'js/ThemeOffice/component.png',0,'ldapProfileMirror=1\ndefaultpic=/components/com_members/images/profile.gif\nwebpath=/site/members\nmaxAllowed=40000000\nfile_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\nuser_messaging=1\nprivacy=1\naccess_org=0\naccess_orgtype=0\naccess_email=2\naccess_url=0\naccess_phone=2\naccess_tags=0\naccess_bio=0\naccess_countryorigin=0\naccess_countryresident=0\naccess_gender=0\naccess_race=2\naccess_hispanic=2\naccess_disability=2\naccess_optin=2\nemployeraccess=0\n\n',1);
-INSERT INTO `#__components` VALUES (83,'Points','option=com_members&controller=points',0,80,'option=com_members&controller=points','Points','com_members',3,'js/ThemeOffice/component.png',0,'ldapProfileMirror=1\ndefaultpic=/components/com_members/images/profile.gif\nwebpath=/site/members\nmaxAllowed=40000000\nfile_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\nuser_messaging=1\nprivacy=1\naccess_org=0\naccess_orgtype=0\naccess_email=2\naccess_url=0\naccess_phone=2\naccess_tags=0\naccess_bio=0\naccess_countryorigin=0\naccess_countryresident=0\naccess_gender=0\naccess_race=2\naccess_hispanic=2\naccess_disability=2\naccess_optin=2\nemployeraccess=0\n\n',1);
-INSERT INTO `#__components` VALUES (84,'Plugins','option=com_members&controller=plugins',0,80,'option=com_members&controller=plugins','Plugins','com_members',4,'js/ThemeOffice/component.png',0,'ldapProfileMirror=1\ndefaultpic=/components/com_members/images/profile.gif\nwebpath=/site/members\nmaxAllowed=40000000\nfile_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\nuser_messaging=1\nprivacy=1\naccess_org=0\naccess_orgtype=0\naccess_email=2\naccess_url=0\naccess_phone=2\naccess_tags=0\naccess_bio=0\naccess_countryorigin=0\naccess_countryresident=0\naccess_gender=0\naccess_race=2\naccess_hispanic=2\naccess_disability=2\naccess_optin=2\nemployeraccess=0\n\n',1);
-INSERT INTO `#__components` VALUES (49,'Submitted Quotes','option=com_feedback&type=submitted',0,48,'option=com_feedback&type=submitted','Submitted Quotes','com_feedback',1,'js/ThemeOffice/component.png',0,'defaultpic=/components/com_feedback/images/contributor.gif\nuploadpath=/site/quotes\nmaxAllowed=40000000\nfile_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\nblacklist=\nbadwords=viagra, pharmacy, xanax, phentermine, dating, ringtones, tramadol, hydrocodone, levitra, ambien, vicodin, fioricet, diazepam, cash advance, free online, online gambling, online prescriptions, debt consolidation, baccarat, loan, slots, credit, mortgage, casino, slot, texas holdem, teen nude, orgasm, gay, fuck, crap, shit, asshole, cunt, fucker, fuckers, motherfucker, fucking, milf, cocksucker, porno, videosex, sperm, hentai, internet gambling, kasino, kasinos, poker, lottery, texas hold em, texas holdem, fisting\n\n',1);
-INSERT INTO `#__components` VALUES (50,'Selected Quotes','option=com_feedback&type=selected',0,48,'option=com_feedback&type=selected','Selected Quotes','com_feedback',2,'js/ThemeOffice/component.png',0,'defaultpic=/components/com_feedback/images/contributor.gif\nuploadpath=/site/quotes\nmaxAllowed=40000000\nfile_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\nblacklist=\nbadwords=viagra, pharmacy, xanax, phentermine, dating, ringtones, tramadol, hydrocodone, levitra, ambien, vicodin, fioricet, diazepam, cash advance, free online, online gambling, online prescriptions, debt consolidation, baccarat, loan, slots, credit, mortgage, casino, slot, texas holdem, teen nude, orgasm, gay, fuck, crap, shit, asshole, cunt, fucker, fuckers, motherfucker, fucking, milf, cocksucker, porno, videosex, sperm, hentai, internet gambling, kasino, kasinos, poker, lottery, texas hold em, texas holdem, fisting\n\n',1);
-INSERT INTO `#__components` VALUES (98,'Config','option=com_register&controller=config',0,97,'option=com_register&controller=config','Config','com_register',1,'js/Themeoffice/component.png',0,'registrationUsername=RRUU\nregistrationPassword=RRUU\nregistrationConfirmPassword=RRUU\nregistrationFullname=RRUU\nregistrationEmail=RRUU\nregistrationConfirmEmail=RRUU\nregistrationURL=HOHO\nregistrationPhone=HOHO\nregistrationEmployment=HOHO\nregistrationOrganization=HOHO\nregistrationCitizenship=HHHH\nregistrationResidency=HHHH\nregistrationSex=HHHH\nregistrationDisability=HHHH\nregistrationHispanic=HHHH\nregistrationRace=HHHH\nregistrationInterests=HOHO\nregistrationReason=HOHO\nregistrationOptIn=HOHO\nregistrationTOU=RHHH',1);
-INSERT INTO `#__components` VALUES (99,'Organizations','option=com_register&controller=organizations',0,97,'option=com_register&controller=organizations','Organizations','com_register',2,'js/Themeoffice/component.png',0,'registrationUsername=RRUU\nregistrationPassword=RRUU\nregistrationConfirmPassword=RRUU\nregistrationFullname=RRUU\nregistrationEmail=RRUU\nregistrationConfirmEmail=RRUU\nregistrationURL=HOHO\nregistrationPhone=HOHO\nregistrationEmployment=HOHO\nregistrationOrganization=HOHO\nregistrationCitizenship=HHHH\nregistrationResidency=HHHH\nregistrationSex=HHHH\nregistrationDisability=HHHH\nregistrationHispanic=HHHH\nregistrationRace=HHHH\nregistrationInterests=HOHO\nregistrationReason=HOHO\nregistrationOptIn=HOHO\nregistrationTOU=RHHH',1);
-INSERT INTO `#__components` VALUES (100,'Employer Types','option=com_register&controller=employers',0,97,'option=com_register&controller=employers','Employer Types','com_register',3,'js/Themeoffice/component.png',0,'registrationUsername=RRUU\nregistrationPassword=RRUU\nregistrationConfirmPassword=RRUU\nregistrationFullname=RRUU\nregistrationEmail=RRUU\nregistrationConfirmEmail=RRUU\nregistrationURL=HOHO\nregistrationPhone=HOHO\nregistrationEmployment=HOHO\nregistrationOrganization=HOHO\nregistrationCitizenship=HHHH\nregistrationResidency=HHHH\nregistrationSex=HHHH\nregistrationDisability=HHHH\nregistrationHispanic=HHHH\nregistrationRace=HHHH\nregistrationInterests=HOHO\nregistrationReason=HOHO\nregistrationOptIn=HOHO\nregistrationTOU=RHHH',1);
-INSERT INTO `#__components` VALUES (101,'Incremental','option=com_register&controller=incrememntal',0,97,'option=com_register&controller=incrememntal','Incremental','com_register',4,'js/Themeoffice/component.png',0,'registrationUsername=RRUU\nregistrationPassword=RRUU\nregistrationConfirmPassword=RRUU\nregistrationFullname=RRUU\nregistrationEmail=RRUU\nregistrationConfirmEmail=RRUU\nregistrationURL=HOHO\nregistrationPhone=HOHO\nregistrationEmployment=HOHO\nregistrationOrganization=HOHO\nregistrationCitizenship=HHHH\nregistrationResidency=HHHH\nregistrationSex=HHHH\nregistrationDisability=HHHH\nregistrationHispanic=HHHH\nregistrationRace=HHHH\nregistrationInterests=HOHO\nregistrationReason=HOHO\nregistrationOptIn=HOHO\nregistrationTOU=RHHH',1);
-INSERT INTO `#__components` VALUES (95,'Orders','option=com_store&controller=orders',0,94,'option=com_store&controller=orders','Orders','com_store',1,'js/ThemeOffice/component.png',0,'store_enabled=1\nwebpath=/site/store\nhubaddress_ln1=\nhubaddress_ln2=\nhubaddress_ln3=\nhubaddress_ln4=\nhubaddress_ln5=\nhubemail=\nhubphone=\nheadertext_ln1=\nheadertext_ln2=\nfootertext=\nreceipt_title=Your Order at Hub Store\nreceipt_note=Thank you for contributing to our hub!\n\n',1);
+INSERT INTO `#__components` VALUES (92, 'Services', 'option=com_services', 0, 91, 'option=com_services&controller=services', 'Services', 'com_services', 1, 'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (93, 'Subscriptions', 'option=com_services', 0, 91, 'option=com_services&controller=subscriptions', 'Subscriptions', 'com_services',2,'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (94,'Store','option=com_store',0,0,'option=com_store','Store','com_store',0,'js/ThemeOffice/component.png',0,'store_enabled=1\nwebpath=/site/store\nhubaddress_ln1=\nhubaddress_ln2=\nhubaddress_ln3=\nhubaddress_ln4=\nhubaddress_ln5=\nhubemail=\nhubphone=\nheadertext_ln1=\nheadertext_ln2=\nfootertext=\nreceipt_title=Your Order at Hub Store\nreceipt_note=Thank you for contributing to our hub!\n\n',1);
+INSERT INTO `#__components` VALUES (95,'Orders','option=com_store&controller=orders',0,94,'option=com_store&controller=orders', 'Orders','com_store',1,'js/ThemeOffice/component.png',0,'store_enabled=1\nwebpath=/site/store\nhubaddress_ln1=\nhubaddress_ln2=\nhubaddress_ln3=\nhubaddress_ln4=\nhubaddress_ln5=\nhubemail=\nhubphone=\nheadertext_ln1=\nheadertext_ln2=\nfootertext=\nreceipt_title=Your Order at Hub Store\nreceipt_note=Thank you for contributing to our hub!\n\n',1);
 INSERT INTO `#__components` VALUES (96,'Items','option=com_store&controller=items',0,94,'option=com_store&controller=items','Items','com_store',2,'js/ThemeOffice/component.png',0,'store_enabled=1\nwebpath=/site/store\nhubaddress_ln1=\nhubaddress_ln2=\nhubaddress_ln3=\nhubaddress_ln4=\nhubaddress_ln5=\nhubemail=\nhubphone=\nheadertext_ln1=\nheadertext_ln2=\nfootertext=\nreceipt_title=Your Order at Hub Store\nreceipt_note=Thank you for contributing to our hub!\n\n',1);
-INSERT INTO `#__components` VALUES (85,'Projects','option=com_projects',0,0,'option=com_projects','Projects','com_projects',0,'../components/com_hub/images/hubzero-component.png',0,'grantinfo=1\nconfirm_step=1\nedit_settings=1\nrestricted_data=2\napprove_restricted=0\nprivacylink=/legal/privacy\nHIPAAlink=/legal/privacy\nFERPAlink=/legal/privacy\ncreatorgroup=\nadmingroup=projectsadmin\nsdata_group=hipaa_reviewers\nginfo_group=sps_reviewers\nmin_name_length=5\nmax_name_length=25\nreserved_names=clone, temp, test, view, edit, setup, start, deleteimg, intro, features, verify, register, autocomplete, showcount, edit, suspend, reinstate, review, analytics, reports, about, feedback, share, authorize\nwebpath=/srv/projects\noffroot=1\ngitpath=/usr/bin/git\ngitclone=/site/projects/clone/.git\nmaxUpload=10000000\ndefaultQuota=.5\npremiumQuota=1\napproachingQuota=90\npubQuota=1\npremiumPubQuota=20\nimagepath=/site/projects\ndefaultpic=/components/com_projects/assets/img/project.png\nimg_maxAllowed=40000000\nimg_file_ext=jpg,jpeg,jpe,bmp,tif,tiff,png,gif\nmessaging=1\nprivacy=1\nlimit=25\nsidebox_limit=3\ngroup_prefix=pr-\nuse_alias=1\ndocumentation=/kb/projects\n\n',1);
-INSERT INTO `#__components` VALUES (86,'System','option=com_system',0,0,'option=com_system','System','com_system',0,'',0,'geodb_driver=mysql\ngeodb_host=localhost\ngeodb_port=\ngeodb_user=\ngeodb_password=\ngeodb_database=\ngeodb_prefix=\nldap_primary=ldap://127.0.0.1\nldap_secondary=\nldap_basedn=\nldap_searchdn=\nldap_searchpw=\nldap_managerdn=\nldap_managerpw=\nldap_tls=0\n\n',1);
+INSERT INTO `#__components` VALUES (97,'Register','option=com_register',0,0,'option=com_register','Register','com_register',0,'js/Themeoffice/component.png',0,'LoginReturn=\nConfirmationReturn=\npasswordMeter=0\nregistrationUsername=RRUU\nregistrationPassword=RRUU\nregistrationConfirmPassword=RRUU\nregistrationFullname=RRUU\nregistrationEmail=RRUU\nregistrationConfirmEmail=RRUU\nregistrationURL=HOHO\nregistrationPhone=HOHO\nregistrationEmployment=HOHO\nregistrationOrganization=HOHO\nregistrationCitizenship=HHHH\nregistrationResidency=HHHH\nregistrationSex=HHHH\nregistrationDisability=HHHH\nregistrationHispanic=HHHH\nregistrationRace=HHHH\nregistrationInterests=HOHO\nregistrationReason=HOHO\nregistrationOptIn=HOHO\nregistrationCAPTCHA=RHHH\nregistrationTOU=RHHH\n\n',1);
+INSERT INTO `#__components` VALUES (98,'Config','option=com_register&controller=config',0,97,'option=com_register&controller=config', 'Config','com_register',1,'js/Themeoffice/component.png',0,'registrationUsername=RRUU\nregistrationPassword=RRUU\nregistrationConfirmPassword=RRUU\nregistrationFullname=RRUU\nregistrationEmail=RRUU\nregistrationConfirmEmail=RRUU\nregistrationURL=HOHO\nregistrationPhone=HOHO\nregistrationEmployment=HOHO\nregistrationOrganization=HOHO\nregistrationCitizenship=HHHH\nregistrationResidency=HHHH\nregistrationSex=HHHH\nregistrationDisability=HHHH\nregistrationHispanic=HHHH\nregistrationRace=HHHH\nregistrationInterests=HOHO\nregistrationReason=HOHO\nregistrationOptIn=HOHO\nregistrationTOU=RHHH',1);
+INSERT INTO `#__components` VALUES (99,'Organizations','option=com_register&controller=organizations', 0,97,'option=com_register&controller=organizations', 'Organizations','com_register',2,'js/Themeoffice/component.png',0,'registrationUsername=RRUU\nregistrationPassword=RRUU\nregistrationConfirmPassword=RRUU\nregistrationFullname=RRUU\nregistrationEmail=RRUU\nregistrationConfirmEmail=RRUU\nregistrationURL=HOHO\nregistrationPhone=HOHO\nregistrationEmployment=HOHO\nregistrationOrganization=HOHO\nregistrationCitizenship=HHHH\nregistrationResidency=HHHH\nregistrationSex=HHHH\nregistrationDisability=HHHH\nregistrationHispanic=HHHH\nregistrationRace=HHHH\nregistrationInterests=HOHO\nregistrationReason=HOHO\nregistrationOptIn=HOHO\nregistrationTOU=RHHH',1);
+INSERT INTO `#__components` VALUES (100,'Employer Types','option=com_register&controller=employers',0,97,'option=com_register&controller=employers', 'Employer Types','com_register',3,'js/Themeoffice/component.png',0,'registrationUsername=RRUU\nregistrationPassword=RRUU\nregistrationConfirmPassword=RRUU\nregistrationFullname=RRUU\nregistrationEmail=RRUU\nregistrationConfirmEmail=RRUU\nregistrationURL=HOHO\nregistrationPhone=HOHO\nregistrationEmployment=HOHO\nregistrationOrganization=HOHO\nregistrationCitizenship=HHHH\nregistrationResidency=HHHH\nregistrationSex=HHHH\nregistrationDisability=HHHH\nregistrationHispanic=HHHH\nregistrationRace=HHHH\nregistrationInterests=HOHO\nregistrationReason=HOHO\nregistrationOptIn=HOHO\nregistrationTOU=RHHH',1);
+INSERT INTO `#__components` VALUES (101,'Incremental','option=com_register&controller=incrememntal',0,97, 'option=com_register&controller=incrememntal','Incremental','com_register',4,'js/Themeoffice/component.png',0,'registrationUsername=RRUU\nregistrationPassword=RRUU\nregistrationConfirmPassword=RRUU\nregistrationFullname=RRUU\nregistrationEmail=RRUU\nregistrationConfirmEmail=RRUU\nregistrationURL=HOHO\nregistrationPhone=HOHO\nregistrationEmployment=HOHO\nregistrationOrganization=HOHO\nregistrationCitizenship=HHHH\nregistrationResidency=HHHH\nregistrationSex=HHHH\nregistrationDisability=HHHH\nregistrationHispanic=HHHH\nregistrationRace=HHHH\nregistrationInterests=HOHO\nregistrationReason=HOHO\nregistrationOptIn=HOHO\nregistrationTOU=RHHH',1);
+INSERT INTO `#__components` VALUES (102, 'Newsletters', 'option=com_newsletter', 0, 0, 'option=com_newsletter', 'Newsletters', 'com_newsletter', 0, 'js/ThemeOffice/component.png', 0, '', 1);
 INSERT INTO `#__components` VALUES (131,'Billboards','option=com_billboards',0,0,'option=com_billboards','Billboards','com_billboards',0,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (132,'Billboards','option=com_billboards&task=billboards',0,131,'option=com_billboards&task=billboards','Billboards','com_billboards',0,'js/ThemeOffice/component.png',0,'',1);
-INSERT INTO `#__components` VALUES (133,'Collections','option=com_billboards&task=collections',0,131,'option=com_billboards&task=collections','Collections','com_billboards',1,'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (132,'Billboards','option=com_billboards&task=billboards',0,131, 'option=com_billboards&task=billboards','Billboards','com_billboards',0,'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (133,'Collections','option=com_billboards&task=collections',0,131, 'option=com_billboards&task=collections','Collections','com_billboards',1,'js/ThemeOffice/component.png',0,'',1);
+INSERT INTO `#__components` VALUES (134, 'Collections', 'option=com_collections', 0, 0, 'option=com_collections', 'Collections', 'com_collections', 0, 'js/ThemeOffice/component.png', 0, '', 1);
+INSERT INTO `#__components` VALUES (135. 'Dataviewer', 'option=com_dataviewer', 0, 0, 'option=com_dataviewer', 'Dataviewer', 'com_dataviewer', 0, 'js/ThemeOffice/component.png', 0, 'record_display_limit=10\nprocessing_mode_switch=0\nproc_switch_threshold=25000\nacl_users=\nacl_groups=\n\n', 1);
 
 INSERT INTO `#__groups` VALUES (0, 'Public');
 INSERT INTO `#__groups` VALUES (1, 'Registered');
@@ -3475,7 +4475,7 @@ INSERT INTO `#__plugins` VALUES ( 45,'Groups - Calendar','calendar','groups',0,1
 INSERT INTO `#__plugins` VALUES ( 46,'Groups - Forum','forum','groups',0,3,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES ( 47,'Groups - Member Options','memberoptions','groups',0,10,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES ( 48,'Groups - Members','members','groups',0,0,1,0,0,0,'0000-00-00 00:00:00','');
-INSERT INTO `#__plugins` VALUES ( 49,'Groups - Messages','messages','groups',0,2,1,0,0,0,'0000-00-00 00:00:00','limit=50');
+INSERT INTO `#__plugins` VALUES ( 49,'Groups - Messages','messages','groups',0,2,1,0,0,0,'0000-00-00 00:00:00','limit=50\ndisplay_tab=0\n\n');
 INSERT INTO `#__plugins` VALUES ( 50,'Groups - Projects','projects','groups',0,8,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES ( 51,'Groups - Resources','resources','groups',0,2,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES ( 52,'Groups - Usage','usage','groups',0,9,0,0,0,0,'0000-00-00 00:00:00','uploadpath=/site/groups/{{gid}}/blog\nposting=0\nfeeds_enabled=0\nfeed_entries=partial');
@@ -3493,7 +4493,7 @@ INSERT INTO `#__plugins` VALUES ( 64,'Members - Account','account','members',0,2
 INSERT INTO `#__plugins` VALUES ( 65,'Members - Blog','blog','members',0,13,1,0,0,0,'0000-00-00 00:00:00','uploadpath=/site/members/{{uid}}/blog\nfeeds_enabled=0\nfeed_entries=partial');
 INSERT INTO `#__plugins` VALUES ( 66,'Members - Contributions','contributions','members',0,6,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES ( 67,'Members - Contributions - Resources','resources','members',0,7,1,0,0,0,'0000-00-00 00:00:00','');
-INSERT INTO `#__plugins` VALUES ( 68,'Members - Contributions - Topics','wiki','members',0,8,1,0,0,0,'0000-00-00 00:00:00','');
+INSERT INTO `#__plugins` VALUES ( 68,'Members - Contributions - Wiki','wiki','members',0,8,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES ( 69,'Members - Dashboard','dashboard','members',0,0,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES ( 70,'Members - Favorites','favorites','members',0,10,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES ( 71,'Members - Groups','groups','members',0,4,1,0,0,0,'0000-00-00 00:00:00','');
@@ -3544,7 +4544,7 @@ INSERT INTO `#__plugins` VALUES (115,'Tags - Knowledgebase','kb','tags',0,7,1,0,
 INSERT INTO `#__plugins` VALUES (116,'Tags - Members','members','tags',0,4,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES (117,'Tags - Resources','resources','tags',0,1,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES (118,'Tags - Support','support','tags',0,3,1,0,0,0,'0000-00-00 00:00:00','');
-INSERT INTO `#__plugins` VALUES (119,'Tags - Topics','wiki','tags',0,2,1,0,0,0,'0000-00-00 00:00:00','');
+INSERT INTO `#__plugins` VALUES (119,'Tags - Wiki','wiki','tags',0,2,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES (120,'Usage - Chart','chart','usage',0,4,0,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES (121,'Usage - Domain Class','domainclass','usage',0,0,0,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES (122,'Usage - Domains','domains','usage',0,5,0,0,0,0,'0000-00-00 00:00:00','');
@@ -3559,7 +4559,7 @@ INSERT INTO `#__plugins` VALUES (130,'Whatsnew - Content','content','whatsnew',0
 INSERT INTO `#__plugins` VALUES (131,'Whatsnew - Events','events','whatsnew',0,1,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES (132,'Whatsnew - Knowledge Base','kb','whatsnew',0,2,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES (133,'Whatsnew - Resources','resources','whatsnew',0,3,1,0,0,0,'0000-00-00 00:00:00','');
-INSERT INTO `#__plugins` VALUES (134,'Whatsnew - Topics','wiki','whatsnew',0,4,1,0,0,0,'0000-00-00 00:00:00','');
+INSERT INTO `#__plugins` VALUES (134,'Whatsnew - Wiki','wiki','whatsnew',0,4,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES (135,'XMessage - Email','email','xmessage',0,0,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES (136,'XMessage - Handler','handler','xmessage',0,1,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES (137,'XMessage - Instant Message','im','xmessage',0,2,0,0,0,0,'0000-00-00 00:00:00','');
@@ -3581,11 +4581,36 @@ INSERT INTO `#__plugins` VALUES (152,'YSearch - Site Map','sitemap','ysearch',0,
 INSERT INTO `#__plugins` VALUES (153,'YSearch - Sort courses by date','sortcourses','ysearch',0,12,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES (154,'YSearch - Sort events by date','sortevents','ysearch',0,13,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES (155,'YSearch - Terms - Suffix Expansion','suffixes','ysearch',0,14,1,0,0,0,'0000-00-00 00:00:00','');
-INSERT INTO `#__plugins` VALUES (156,'YSearch - Topics','wiki','ysearch',0,15,1,0,0,0,'0000-00-00 00:00:00','');
+INSERT INTO `#__plugins` VALUES (156,'YSearch - Wiki','wiki','ysearch',0,15,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES (157,'YSearch - Increase weight of items with contributors matching terms','weightcontributor','ysearch',0,16,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES (158,'YSearch - Increase relevance for tool results','weighttools','ysearch',0,17,0,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES (159,'YSearch - Wishlists','wishlists','ysearch',0,18,1,0,0,0,'0000-00-00 00:00:00','');
 INSERT INTO `#__plugins` VALUES (160,'User - Constant Contact', 'constantcontact', 'user', 0, 0, 1, 0, 0, 0, '0000-00-00 00:00:00', '');
+INSERT INTO `#__plugins` VALUES (161, 'Members - Courses','courses','members',0,16,0,0,0,0,'0000-00-00 00:00:00','');
+INSERT INTO `#__plugins` VALUES (162, 'Courses - Syllabus','syllabus','courses',0,1,0,0,0,0,'0000-00-00 00:00:00','');
+INSERT INTO `#__plugins` VALUES (163, 'Courses - Disucssions','discussions','courses',0,2,1,0,0,0,'0000-00-00 00:00:00','');
+INSERT INTO `#__plugins` VALUES (164, 'Courses - My Progress','progress','courses',0,3,1,0,0,0,'0000-00-00 00:00:00','');
+INSERT INTO `#__plugins` VALUES (165, 'Courses - Announcements','announcements','courses',0,4,1,0,0,0,'0000-00-00 00:00:00','');
+INSERT INTO `#__plugins` VALUES (166, 'Courses - Dashboard','dashboard','courses',0,5,1,0,0,0,'0000-00-00 00:00:00','');
+INSERT INTO `#__plugins` VALUES (167, 'Courses - Course Overview','overview','courses',0,6,1,0,0,0,'0000-00-00 00:00:00','');
+INSERT INTO `#__plugins` VALUES (168, 'Courses - Course Reviews','reviews','courses',0,7,1,0,0,0,'0000-00-00 00:00:00','');
+INSERT INTO `#__plugins` VALUES (169, 'Courses - Course Offerings','offerings','courses',0,8,1,0,0,0,'0000-00-00 00:00:00','');
+INSERT INTO `#__plugins` VALUES (170, 'Courses - Notes','notes','courses',0,11,1,0,0,0,'0000-00-00 00:00:00','');
+INSERT INTO `#__plugins` VALUES (171, 'Courses - Course FAQ','faq','courses',0,9,1,0,0,0,'0000-00-00 00:00:00','');
+INSERT INTO `#__plugins` VALUES (172, 'Courses - Course Related','related','courses',0,10,1,0,0,0,'0000-00-00 00:00:00','');
+INSERT INTO `#__plugins` VALUES (173, 'Courses - Store','store','courses',0,12,1,0,0,0,'0000-00-00 00:00:00','');
+INSERT INTO `#__plugins` VALUES (174, 'Courses - Outline', 'outline', 'courses', 0, 2, 1, 0, 0, 0, '0000-00-00 00:00:00', '');
+INSERT INTO `#__plugins` VALUES (175, 'Courses - Pages', 'pages', 'courses', 0, 4, 1, 0, 0, 0, '0000-00-00 00:00:00', '');
+INSERT INTO `#__plugins` VALUES (176, 'Cron - Support', 'support', 'cron', 0, 1, 1, 0, 0, 0, '0000-00-00 00:00:00', '');
+INSERT INTO `#__plugins` VALUES (177, 'Cron - Members', 'members', 'cron', 0, 2, 1, 0, 0, 0, '0000-00-00 00:00:00', '');
+INSERT INTO `#__plugins` VALUES (178, 'Cron - Cache', 'cache', 'cron', 0, 3, 1, 0, 0, 0, '0000-00-00 00:00:00', '');
+INSERT INTO `#__plugins` VALUES (179, 'Cron - Groups', 'groups', 'cron', 0, 4, 1, 0, 0, 0, '0000-00-00 00:00:00', '');
+INSERT INTO `#__plugins` VALUES (180, 'Authentication - Twitter', 'twitter', 'authentication', 0, 8, 0, 0, 0, 0, '0000-00-00 00:00:00', '');
+INSERT INTO `#__plugins` VALUES (181, 'Groups - Announcements', 'announcements', 'groups', 0, 12, 1, 0, 0, 0, '0000-00-00 00:00:00', 'plugin_access=members\ndisplay_tab=1');
+INSERT INTO `#__plugins` VALUES (182, 'Cron - Newsletter', 'newsletter', 'cron', 0, 1, 1, 0, 0, 0, '0000-00-00 00:00:00', '');
+INSERT INTO `#__plugins` VALUES (183, 'Courses - Guide','guide','courses',0,15,1,0,0,0,'0000-00-00 00:00:00','');
+INSERT INTO `#__plugins` VALUES (184, 'YSearch - Courses', 'courses', 'ysearch', 0, 0, 1, 0, 0, 0, '0000-00-00 00:00:00', '');
+INSERT INTO `#__plugins` VALUES (185, 'Projects - Databases', 'databases', 'projects', 0, 5, 0, 0, 0, 0, NULL, '');
 
 INSERT INTO `#__modules` VALUES (1, 'Main Menu', '', 1, 'left', 0, '0000-00-00 00:00:00', 1, 'mod_mainmenu', 0, 0, 1, 'menutype=mainmenu\nmoduleclass_sfx=_menu\n', 1, 0, '');
 INSERT INTO `#__modules` VALUES (2, 'Login', '', 1, 'login', 0, '0000-00-00 00:00:00', 1, 'mod_login', 0, 0, 1, '', 1, 1, '');
@@ -3675,9 +4700,40 @@ INSERT INTO `#__ysearch_plugin_weights` VALUES ('groups',0.8);
 INSERT INTO `#__ysearch_plugin_weights` VALUES ('kb',0.8);
 INSERT INTO `#__ysearch_plugin_weights` VALUES ('members',0.8);
 INSERT INTO `#__ysearch_plugin_weights` VALUES ('resources',0.8);
-INSERT INTO `#__ysearch_plugin_weights` VALUES ('topics',1);
+INSERT INTO `#__ysearch_plugin_weights` VALUES ('wiki',1);
 INSERT INTO `#__ysearch_plugin_weights` VALUES ('weighttitle',1);
 INSERT INTO `#__ysearch_plugin_weights` VALUES ('sortrelevance',1);
 INSERT INTO `#__ysearch_plugin_weights` VALUES ('sortnewer',0.2);
 INSERT INTO `#__ysearch_plugin_weights` VALUES ('tagmod',1.3);
 INSERT INTO `#__ysearch_plugin_weights` VALUES ('weightcontributor',0.2);
+
+INSERT INTO `#__courses_roles` (`offering_id`, `alias`, `title`, `permissions`) VALUES	(0, 'instructor', 'Instructor', ''), (0, 'manager', 'Manager', ''),	(0, 'student', 'Student', '');
+
+INSERT INTO `#__courses_grade_policies` (`id`, `description`, `threshold`, `exam_weight`, `quiz_weight`, `homework_weight`)
+						VALUES (1, 'An average exam score of 70% or greater is required to pass the class.  Quizzes and homeworks do not count toward the final score.', 0.70, 1.00, 0.00, 0.00);
+
+INSERT INTO `#__newsletter_templates` (`editable`, `name`, `template`, `primary_title_color`, `primary_text_color`, `secondary_title_color`, `secondary_text_color`, `deleted`) VALUES (1, 'Default HTML Email Template', '<html>\n	<head>\n		<title>{{TITLE}}</title>\n	</head>\n	<body>\n		<table width=\"100%\" border=\"0\" cellspacing=\"0\">\n			<tr>\n				<td align=\"center\">\n					\n					<table width=\"700\" border=\"0\" cellpadding=\"20\" cellspacing=\"0\">\n						<tr class=\"display-browser\">\n							<td colspan=\"2\" style=\"font-size:10px;padding:0 0 5px 0;\" align=\"center\">\n								Email not displaying correctly? <a href=\"{{LINK}}\">View in a Web Browser</a>\n							</td>\n						</tr>\n						<tr>\n							<td colspan=\"2\" style=\"background:#000000;\">\n								<h1 style=\"color:#FFFFFF;\">HUB Campaign Template</h1>\n								<h3 style=\"color:#888888;\">{{TITLE}}</h3>\n							</td>\n						<tr>\n							<td width=\"500\" valign=\"top\" style=\"font-size:14px;color:#222222;border-left:1px solid #000000;\">\n								<span style=\"display:block;color:#CCCCCC;margin-bottom:20px;\">Issue {{ISSUE}}</span>\n								{{PRIMARY_STORIES}}\n							</td>\n							<td width=\"200\" valign=\"top\" style=\"font-size:12px;color:#555555;border-left:1px solid #AAAAAA;border-right:1px solid #000000;\">\n								{{SECONDARY_STORIES}}\n							</td>\n						</tr>\n						<tr>\n							<td colspan=\"2\" align=\"center\" style=\"background:#000000;color:#FFFFFF;\">\n								Copyright &copy; {{COPYRIGHT}} HUB. All Rights reserved.\n							</td>\n						</tr>\n					</table>\n				\n				</td>\n			</tr>\n		</table>\n	</body>\n</html>	', '', '', '', '', 0);
+INSERT INTO `#__newsletter_templates` (`editable`, `name`, `template`, `primary_title_color`, `primary_text_color`, `secondary_title_color`, `secondary_text_color`, `deleted`) VALUES (2, 'Default Plain Text Email Template', 'View In Browser - {{LINK}}\n=====================================\n{{TITLE}} - {{ISSUE}}\n=====================================\n\n{{PRIMARY_STORIES}}\n\n--------------------------------------------------\n\n{{SECONDARY_STORIES}}\n\n--------------------------------------------------\n\nUnsubscribe - {{UNSUBSCRIBE_LINK}}\nCopyright - {{COPYRIGHT}}', NULL, NULL, NULL, NULL, 0);
+
+INSERT INTO `#__cron_jobs` (`title`, `state`, `plugin`, `event`, `last_run`, `next_run`, `recurrence`, `created`, `created_by`, `modified`, `modified_by`, `active`, `ordering`, `params`) VALUES ('Process Newsletter Mailings', 0, 'newsletter', 'processMailings', '0000-00-00 00:00:00', '0000-00-00 00:00:00', '*/5 * * * *', '2013-06-25 08:23:04', 1001, '2013-07-16 17:15:01', 0, 0, 0, '');
+INSERT INTO `#__cron_jobs` (`title`, `state`, `plugin`, `event`, `last_run`, `next_run`, `recurrence`, `created`, `created_by`, `modified`, `modified_by`, `active`, `ordering`, `params`) VALUES ('Process Newsletter Opens & Click IP Addresses', 0, 'newsletter', 'processIps', '0000-00-00 00:00:00', '0000-00-00 00:00:00', '*/5 * * * *', '2013-06-25 08:23:04', 1001, '2013-07-16 17:15:01', 0, 0, 0, '');
+
+INSERT INTO `#__oaipmh_dcspecs` (`id`, `name`, `query`, `display`) VALUES
+						(1, 'resource IDs', 'SELECT p.id FROM #__publications p, #__publication_versions pv WHERE p.id = pv.publication_id AND pv.state = 1', 1),
+						(2, 'specify sets', '', 1),
+						(3, 'title', 'SELECT pv.title FROM #__publication_versions pv, #__publications p WHERE p.id = pv.publication_id AND p.id = \$id LIMIT 1', 1),
+						(4, 'creator', 'SELECT pa.name FROM #__publication_authors pa, #__publication_versions pv, #__publications p WHERE pa.publication_version_id = pv.id AND pv.publication_id = p.id AND p.id = \$id LIMIT 1', 1),
+						(5, 'subject', 'SELECT t.raw_tag FROM #__tags t, #__tags_object tos WHERE t.id = tos.tagid AND tos.objectid = \$id ORDER BY t.raw_tag', 1),
+						(6, 'date', 'SELECT pv.submitted FROM #__publication_versions pv, #__publications p WHERE p.id = pv.publication_id AND p.id = \$id ORDER BY pv.submitted LIMIT 1', 1),
+						(7, 'identifier', 'SELECT pv.doi FROM #__publication_versions pv, #__publications p WHERE p.id = pv.publication_id AND pv.state = 1 AND p.id = \$id', 1),
+						(8, 'description', 'SELECT pv.description FROM #__publication_versions pv, #__publications p WHERE p.id = pv.publication_id AND p.id = \$id LIMIT 1', 1),
+						(9, 'type', 'Dataset', 1),
+						(10, 'publisher', 'myhub', 1),
+						(11, 'rights', 'SELECT pl.title FROM #__publications p, #__publication_versions pv, #__publication_licenses pl WHERE pl.id = pv.license_type AND pv.publication_id = p.id AND p.id = \$id LIMIT 1', 1),
+						(12, 'contributor', 'SELECT pa.name FROM #__publication_authors pa, #__publication_versions pv, #__publications p WHERE pa.publication_version_id = pv.id AND pv.publication_id = p.id AND p.id = \$id AND pv.state = 1', 1),
+						(13, 'relation', 'SELECT DISTINCT path FROM #__publication_attachments pa WHERE publication_id = \$id AND role = 1 ORDER BY path', 1),
+						(14, 'format', '', 1),
+						(15, 'coverage', '', 1),
+						(16, 'language', '', 1),
+						(17, 'source', '', 1);
+
