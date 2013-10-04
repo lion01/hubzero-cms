@@ -31,6 +31,23 @@
 // Check to ensure this file is included in Joomla!
 defined('_JEXEC') or die( 'Restricted access' );
 
+// If the user is already logged in, redirect to the return or profile page.
+$user = JFactory::getUser();
+if ($user->get('guest') != 1) {
+
+	$return = base64_decode(JRequest::getVar('return', '',  'method', 'base64'));
+
+	if ($return)
+	{
+		JFactory::getApplication()->redirect(JRoute::_($return, false));
+		return; 
+	}
+
+	// Redirect to profile page.
+	JFactory::getApplication()->redirect(JRoute::_('index.php?option=com_members&task=myaccount', false));
+	return;
+}
+
 // Check for error messages (regular message queue)
 if (!empty($error_message))
 {
