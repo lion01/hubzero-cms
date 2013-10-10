@@ -66,10 +66,17 @@ class plgCronRegister extends JPlugin
 	public function doRegistration($params=null)
 	{		
 		// Settings
-		//$file = "register.ini";
-		//$content = file_get_contents($file);
-		//$param = $this->params->set('last_updated', '08/17/2012');
-		//print_r($param); die;
+		$file = JPATH_PLUGINS . DS . "cron" . DS . "register" . DS . "register.ini";
+		$settings = parse_ini_file($file);
+		
+		// Set fetch from date limit
+		$fetchFrom = $settings['lastUpdated'];
+		// Test overrride
+		$fetchFrom = '8/8/2013';
+		
+		// Update lastUpdated to today
+		$settings['lastUpdated'] = date('j/n/Y');
+		$this->write_php_ini($settings, $file);
 		
 		// Get all offerings with associated PEC IDs (section_id);
 		$database =& JFactory::getDBO();
@@ -82,33 +89,13 @@ class plgCronRegister extends JPlugin
 		{
 			return true;
 		}
-		
-		//print_r($activeOfferings); die;		
 				
-		// Build an array of offerings ready to be registered for
-		$idsMap = array();
-		foreach ($activeOfferings as $offering)
-		{
-			// Get params
-			$params = parse_ini_string($offering->params);
-			
-			if (!empty($params['pec_course']))
-			{
-				$idsMap[$params['pec_course']] = $offering->id;
-			}
-		}
-		
-		//print_r($idsMap); die;
-		
 		// Get registratinos from PEC		
 		$curl_result = '';
 		$curl_err = '';
 		
 		$url = 'https://dev.pec.purdue.edu/reports/ce/Premis/PremisService.asmx/GetEnrollmentsByAttributeByDateJSON';
-		//$url = 'http://www.shunko.com';
 		
-		$fetchFrom = date('j/n/Y');
-		$fetchFrom = '8/8/2013';
 		
 		$data['dateInput'] = $fetchFrom;
 		$data['attribute_ans'] = 'purdue next';
@@ -147,74 +134,87 @@ class plgCronRegister extends JPlugin
 		 */
 		 		 
 		 $registrations = $registrations->Table;
-		 //print_r($registrations); die;
+		 print_r($registrations); die;
 		 
+		 /*
 		 $testObj->section_id = 9052;
 		 $testObj->enrollment_id = '9991218'; 
+		 $testObj->lms_id = '999'; // HUB's section ID
 		 $testObj->enrollment_status = 'Enrolled';
 		 $testObj->first_name = 'Mashka';
 		 $testObj->last_name = 'Shunko';
-		 $testObj->home_email = 'mshunko@gmail.com'; // Dropped, Enrolled
+		 $testObj->home_email = 'mshunko@purdue.edu'; // Dropped, Enrolled
 		 $testObj->password = '';
-		 $testObj->username = 'mshunko@gmail.com';
-		 
+		 $testObj->cas_id = 'mshunko';
+		 $testObj->username = 'mshunko@purdue.edu';
 		 $registrations = array(0 => $testObj);
+		 */
 		 
 		 // Include helper
 		require_once(JPATH_ROOT . DS . 'components' . DS . 'com_register' . DS . 'helpers' . DS . 'Premis.php');
 		 
 		 foreach ($registrations as $registration) 
 		 {
-			 // See if there is a match with the map
-			 if (array_key_exists($registration->section_id, $idsMap))
-			 {
-				echo '<p>' . $registration->last_name . '<p>';
-				
-				// Do the registration
-				
-				// Get the POST data from request
-				$user['fName'] = $registration->first_name;
-				$user['lName'] = $registration->last_name;
-				$user['email'] = $registration->home_email;
-				// ??
-				//$user['casId'] = 'mshunko';
-				$user['premisId'] = $registration->username;
-				$user['password'] = md5($registration->password);
-				$user['premisEnrollmentId'] = $registration->enrollment_id;
-				
-				$offeringId = $idsMap[$registration->section_id];
-				$courses['lookupByOfferingId'] = true;
-				
-				if ($testObj->enrollment_status == 'Enrolled')
-				{
-					$courses['add'] = $offeringId;
-				}
-				elseif ($testObj->enrollment_status == 'Dropped')
-				{
-					$courses['drop'] = $offeringId;
-				}
-								
-				// Handle registration request
-				$return = Hubzero_Register_Premis::doRegistration($user, $courses);
-				//print_r($return); die;
-				
-				// Check request status and display a corresponding message
-				if ($return['status'] != 'ok')		
-				{
-					echo 'error';	
-				}
-				else {
-					echo 'ok';
-				}				
-					
-			 }		 
+			// Do the registration
+
+			$user['fName'] = $registration->first_name;
+			$user['lName'] = $registration->last_name;
+			$user['email'] = $registration->home_email;
+			if (empty($registration->password))
+			{
+				$user['casId'] = $registration->cas_id;
+			}
+			$user['premisId'] = $registration->username;
+			$user['password'] = $registration->password;
+			$user['premisEnrollmentId'] = $registration->enrollment_id;
+			
+			$sectionId = $registration->lms_id;
+							
+			if ($testObj->enrollment_status == 'Enrolled')
+			{
+				$courses['add'] = $sectionId;
+			}
+			elseif ($testObj->enrollment_status == 'Dropped')
+			{
+				$courses['drop'] = $sectionId;
+			}
+							
+			// Handle registration request
+			$return = Hubzero_Register_Premis::doRegistration($user, $courses);
+			//print_r($return); die;
+			
+			// Check request status and display a corresponding message
+			if ($return['status'] != 'ok')		
+			{
+				echo 'error';	
+			}
+			else {
+				echo 'ok';
+			}				
+
 		 }		
 		
 		die("\n\n<br><br>~<br><br>\n");
 		
 		// Just do it after done
-		return true;
-			
+		return true;			
 	}
+	
+	
+	private function write_php_ini($array, $file)
+    {
+        $res = array();
+        foreach($array as $key => $val)
+        {
+            if(is_array($val))
+            {
+                $res[] = "[$key]";
+                foreach($val as $skey => $sval) $res[] = "$skey = ".(is_numeric($sval) ? $sval : '"'.$sval.'"');
+            }
+            else $res[] = "$key = ".(is_numeric($val) ? $val : '"'.$val.'"');
+        }
+		file_put_contents($file, implode("rn", $res), LOCK_EX);  
+    }
+
 }
 
